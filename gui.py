@@ -16,6 +16,11 @@ class TicTacToeGUI:
 
         self.create_board_lines()
 
+        # 勝敗結果を表示するためのラベルを作成
+        self.result_label = tk.Label(master, text="", bg="#333333", fg="yellow", font=("Arial", 20, "bold"))
+        self.result_label.pack(pady=10)
+        self.result_label.pack_forget()  # 初期状態では非表示
+
         # 設定を保持するためのインスタンス変数を追加
         self.selected_player = True  # デフォルトは先手
         self.selected_agent = "ランダム"  # デフォルトはランダム
@@ -145,19 +150,24 @@ class TicTacToeGUI:
                 self.game.switch_player()
 
     def game_over(self, winner):
+        # 3目を示す直線を描画
+        if self.game.winner_line:
+            (row1, col1), (row2, col2) = self.game.winner_line
+            x1, y1 = col1 * 100 + 50, row1 * 100 + 50
+            x2, y2 = col2 * 100 + 50, row2 * 100 + 50
+            self.canvas.create_line(x1, y1, x2, y2, fill="yellow", width=5)
+
+        # 勝敗判定結果をラベルに表示
         if winner == "draw":
-            messagebox.showinfo("ゲーム終了", "引き分けです！")
+            self.result_label.config(text="引き分けです！")
         else:
-            messagebox.showinfo("ゲーム終了", f"{winner}の勝ちです！")
-            if self.game.winner_line:
-                (row1, col1), (row2, col2) = self.game.winner_line
-                x1, y1 = col1 * 100 + 50, row1 * 100 + 50
-                x2, y2 = col2 * 100 + 50, row2 * 100 + 50
-                self.canvas.create_line(x1, y1, x2, y2, fill="yellow", width=5)
+            self.result_label.config(text=f"{winner}の勝ちです！")
+        self.result_label.pack()
 
     def restart_game(self):
         self.restart_button.pack_forget()
         self.game_info_frame.pack_forget()
+        self.result_label.pack_forget()  # 結果ラベルを非表示にする
         self.start_game_frame = tk.Frame(self.master, bg="#333333")
         self.start_game_frame.pack()
 
