@@ -1,4 +1,3 @@
-# --- gui.py ---
 import tkinter as tk
 from tkinter import messagebox
 from game_logic import TicTacToe
@@ -10,59 +9,89 @@ class TicTacToeGUI:
         master.configure(bg="#333333")  # Dark background
 
         self.game = None
-        self.buttons = []
         self.canvas = tk.Canvas(master, width=300, height=300, bg="#333333", highlightthickness=0)
         self.canvas.pack(pady=20)
 
         self.create_board_lines()
 
-        # 勝敗結果を表示するためのラベルを作成
+        # 勝敗結果を表示するためのラベル
         self.result_label = tk.Label(master, text="", bg="#333333", fg="yellow", font=("Arial", 20, "bold"))
         self.result_label.pack(pady=10)
         self.result_label.pack_forget()  # 初期状態では非表示
 
-        # 設定を保持するためのインスタンス変数を追加
-        self.selected_player = True  # デフォルトは先手
-        self.selected_agent = "ランダム"  # デフォルトはランダム
+        # 設定保持用の変数（再スタート時に利用）
+        self.selected_player = None  # True: 先手, False: 後手
+        self.selected_agent = None   # "ランダム" または "Minimax"
 
-        self.start_game_frame = tk.Frame(master, bg="#333333")
-        self.start_game_frame.pack()
+        # 設定画面（初回はここからゲーム開始）
+        self.build_settings_ui()
 
-        self.player_label = tk.Label(self.start_game_frame, text="先手/後手:", bg="#333333", fg="#EEEEEE", font=("Arial", 14, "bold"))
-        self.player_label.grid(row=0, column=0, padx=5, pady=5)
+        # 再開用ボタンフレーム（ゲーム終了後に表示）
+        self.restart_buttons_frame = tk.Frame(master, bg="#333333")
+        self.restart_same_button = tk.Button(
+            self.restart_buttons_frame, text="同じ設定で再開",
+            command=self.restart_game_same_settings, bg="#444444", fg="black", font=("Arial", 14, "bold")
+        )
+        self.restart_same_button.pack(side=tk.LEFT, padx=5)
+        self.restart_reset_button = tk.Button(
+            self.restart_buttons_frame, text="条件再設定",
+            command=self.restart_game_with_settings, bg="#444444", fg="black", font=("Arial", 14, "bold")
+        )
+        self.restart_reset_button.pack(side=tk.LEFT, padx=5)
+        self.restart_buttons_frame.pack_forget()  # 初期状態では非表示
 
-        self.player_var = tk.BooleanVar(value=True)
-        self.player_first_radio = tk.Radiobutton(self.start_game_frame, text="先手", variable=self.player_var, value=True, bg="#333333", fg="#EEEEEE", selectcolor="#555555", font=("Arial", 12, "bold"))
-        self.player_first_radio.grid(row=0, column=1, padx=5, pady=5)
-        self.player_second_radio = tk.Radiobutton(self.start_game_frame, text="後手", variable=self.player_var, value=False, bg="#333333", fg="#EEEEEE", selectcolor="#555555", font=("Arial", 12, "bold"))
-        self.player_second_radio.grid(row=0, column=2, padx=5, pady=5)
-
-        self.agent_label = tk.Label(self.start_game_frame, text="エージェント:", bg="#333333", fg="#EEEEEE", font=("Arial", 14, "bold"))
-        self.agent_label.grid(row=1, column=0, padx=5, pady=5)
-
-        self.agent_var = tk.StringVar(value="ランダム")
-        self.random_agent_radio = tk.Radiobutton(self.start_game_frame, text="ランダム", variable=self.agent_var, value="ランダム", bg="#333333", fg="#EEEEEE", selectcolor="#555555", font=("Arial", 12, "bold"))
-        self.random_agent_radio.grid(row=1, column=1, padx=5, pady=5)
-        self.minimax_agent_radio = tk.Radiobutton(self.start_game_frame, text="Minimax", variable=self.agent_var, value="Minimax", bg="#333333", fg="#EEEEEE", selectcolor="#555555", font=("Arial", 12, "bold"))
-        self.minimax_agent_radio.grid(row=1, column=2, padx=5, pady=5)
-
-        # ゲーム開始ボタンの文字色を黒に変更
-        self.start_button = tk.Button(self.start_game_frame, text="ゲーム開始", command=self.start_game, bg="#444444", fg="black", font=("Arial", 14, "bold"))
-        self.start_button.grid(row=2, column=0, columnspan=3, pady=10)
-
-        # リスタートボタンを初期化時に作成し、非表示にする
-        self.restart_button = tk.Button(self.master, text="リスタート", command=self.restart_game, bg="#444444", fg="black", font=("Arial", 14, "bold"))
-        self.restart_button.pack(pady=10)
-        self.restart_button.pack_forget()  # 初期状態では非表示
-
-        # ゲーム情報を表示するフレームを作成
+        # ゲーム情報表示用フレーム
         self.game_info_frame = tk.Frame(master, bg="#333333")
-
-        # 先手/後手とエージェントを表示するラベルを作成
         self.player_info_label = tk.Label(self.game_info_frame, text="", bg="#333333", fg="#EEEEEE", font=("Arial", 12, "bold"))
         self.player_info_label.pack(side="left", padx=10)
         self.agent_info_label = tk.Label(self.game_info_frame, text="", bg="#333333", fg="#EEEEEE", font=("Arial", 12, "bold"))
         self.agent_info_label.pack(side="left", padx=10)
+
+    def build_settings_ui(self):
+        """設定画面を構築する（先手/後手、エージェント選択）"""
+        self.start_game_frame = tk.Frame(self.master, bg="#333333")
+        self.start_game_frame.pack()
+
+        self.player_label = tk.Label(
+            self.start_game_frame, text="先手/後手:", bg="#333333", fg="#EEEEEE", font=("Arial", 14, "bold")
+        )
+        self.player_label.grid(row=0, column=0, padx=5, pady=5)
+
+        self.player_var = tk.BooleanVar(value=True)
+        self.player_first_radio = tk.Radiobutton(
+            self.start_game_frame, text="先手", variable=self.player_var, value=True,
+            bg="#333333", fg="#EEEEEE", selectcolor="#555555", font=("Arial", 12, "bold")
+        )
+        self.player_first_radio.grid(row=0, column=1, padx=5, pady=5)
+        self.player_second_radio = tk.Radiobutton(
+            self.start_game_frame, text="後手", variable=self.player_var, value=False,
+            bg="#333333", fg="#EEEEEE", selectcolor="#555555", font=("Arial", 12, "bold")
+        )
+        self.player_second_radio.grid(row=0, column=2, padx=5, pady=5)
+
+        self.agent_label = tk.Label(
+            self.start_game_frame, text="エージェント:", bg="#333333", fg="#EEEEEE", font=("Arial", 14, "bold")
+        )
+        self.agent_label.grid(row=1, column=0, padx=5, pady=5)
+
+        self.agent_var = tk.StringVar(value="ランダム")
+        self.random_agent_radio = tk.Radiobutton(
+            self.start_game_frame, text="ランダム", variable=self.agent_var, value="ランダム",
+            bg="#333333", fg="#EEEEEE", selectcolor="#555555", font=("Arial", 12, "bold")
+        )
+        self.random_agent_radio.grid(row=1, column=1, padx=5, pady=5)
+        self.minimax_agent_radio = tk.Radiobutton(
+            self.start_game_frame, text="Minimax", variable=self.agent_var, value="Minimax",
+            bg="#333333", fg="#EEEEEE", selectcolor="#555555", font=("Arial", 12, "bold")
+        )
+        self.minimax_agent_radio.grid(row=1, column=2, padx=5, pady=5)
+
+        # ゲーム開始ボタン
+        self.start_button = tk.Button(
+            self.start_game_frame, text="ゲーム開始", command=self.start_game,
+            bg="#444444", fg="black", font=("Arial", 14, "bold")
+        )
+        self.start_button.grid(row=2, column=0, columnspan=3, pady=10)
 
     def create_board_lines(self):
         for i in range(1, 3):
@@ -74,32 +103,23 @@ class TicTacToeGUI:
         self.selected_player = self.player_var.get()
         self.selected_agent = self.agent_var.get()
 
-        player_first = self.player_var.get()
-        agent_type = self.agent_var.get()
-        self.game = TicTacToe(player_first, agent_type)
+        self.game = TicTacToe(self.selected_player, self.selected_agent)
 
-        # ラジオボタンを無効化
-        self.player_first_radio.config(state="disabled")
-        self.player_second_radio.config(state="disabled")
-        self.random_agent_radio.config(state="disabled")
-        self.minimax_agent_radio.config(state="disabled")
-
+        # 設定画面を破棄
         self.start_game_frame.destroy()
 
         self.draw_board()
-        if not player_first:
+        # 人間が後手の場合は、エージェントが先手なので先にエージェントの手を実行
+        if not self.selected_player:
             self.agent_turn()
+        # キャンバスにクリックイベントをバインド
         self.canvas.bind("<Button-1>", self.on_canvas_click)
-        # ゲーム開始時にリスタートボタンを表示
-        self.restart_button.pack()
-        self.start_button.destroy()
-        # ゲーム情報を表示
         self.game_info_frame.pack(pady=10)
         self.update_game_info()
 
     def update_game_info(self):
-        player_text = "先手" if self.player_var.get() else "後手"
-        agent_text = self.agent_var.get()
+        player_text = "先手" if self.selected_player else "後手"
+        agent_text = self.selected_agent
         self.player_info_label.config(text=f"プレイヤー: {player_text}")
         self.agent_info_label.config(text=f"エージェント: {agent_text}")
 
@@ -150,46 +170,38 @@ class TicTacToeGUI:
                 self.game.switch_player()
 
     def game_over(self, winner):
-        # 3目を示す直線を描画
+        # ゲーム終了時、キャンバスのクリックイベントを解除
+        self.canvas.unbind("<Button-1>")
         if self.game.winner_line:
             (row1, col1), (row2, col2) = self.game.winner_line
             x1, y1 = col1 * 100 + 50, row1 * 100 + 50
             x2, y2 = col2 * 100 + 50, row2 * 100 + 50
             self.canvas.create_line(x1, y1, x2, y2, fill="yellow", width=5)
-
-        # 勝敗判定結果をラベルに表示
         if winner == "draw":
             self.result_label.config(text="引き分けです！")
         else:
             self.result_label.config(text=f"{winner}の勝ちです！")
         self.result_label.pack()
+        # ゲーム終了後は再開用ボタンフレームを表示
+        self.restart_buttons_frame.pack(pady=10)
 
-    def restart_game(self):
-        self.restart_button.pack_forget()
-        self.game_info_frame.pack_forget()
-        self.result_label.pack_forget()  # 結果ラベルを非表示にする
-        self.start_game_frame = tk.Frame(self.master, bg="#333333")
-        self.start_game_frame.pack()
+    def restart_game_same_settings(self):
+        """同じ設定で新しいゲームを開始する"""
+        self.result_label.pack_forget()
+        self.restart_buttons_frame.pack_forget()
+        # 新しいゲームオブジェクトを作成
+        self.game = TicTacToe(self.selected_player, self.selected_agent)
+        self.draw_board()
+        self.canvas.bind("<Button-1>", self.on_canvas_click)
+        self.update_game_info()
 
-        self.player_label = tk.Label(self.start_game_frame, text="先手/後手:", bg="#333333", fg="#EEEEEE", font=("Arial", 14, "bold"))
-        self.player_label.grid(row=0, column=0, padx=5, pady=5)
-
-        # 保存された設定を反映
-        self.player_var = tk.BooleanVar(value=self.selected_player)
-        self.player_first_radio = tk.Radiobutton(self.start_game_frame, text="先手", variable=self.player_var, value=True, bg="#333333", fg="#EEEEEE", selectcolor="#555555", font=("Arial", 12, "bold"))
-        self.player_first_radio.grid(row=0, column=1, padx=5, pady=5)
-        self.player_second_radio = tk.Radiobutton(self.start_game_frame, text="後手", variable=self.player_var, value=False, bg="#333333", fg="#EEEEEE", selectcolor="#555555", font=("Arial", 12, "bold"))
-        self.player_second_radio.grid(row=0, column=2, padx=5, pady=5)
-
-        self.agent_label = tk.Label(self.start_game_frame, text="エージェント:", bg="#333333", fg="#EEEEEE", font=("Arial", 14, "bold"))
-        self.agent_label.grid(row=1, column=0, padx=5, pady=5)
-
-        # 保存された設定を反映
-        self.agent_var = tk.StringVar(value=self.selected_agent)
-        self.random_agent_radio = tk.Radiobutton(self.start_game_frame, text="ランダム", variable=self.agent_var, value="ランダム", bg="#333333", fg="#EEEEEE", selectcolor="#555555", font=("Arial", 12, "bold"))
-        self.random_agent_radio.grid(row=1, column=1, padx=5, pady=5)
-        self.minimax_agent_radio = tk.Radiobutton(self.start_game_frame, text="Minimax", variable=self.agent_var, value="Minimax", bg="#333333", fg="#EEEEEE", selectcolor="#555555", font=("Arial", 12, "bold"))
-        self.minimax_agent_radio.grid(row=1, column=2, padx=5, pady=5)
-
-        self.start_button = tk.Button(self.start_game_frame, text="ゲーム開始", command=self.start_game, bg="#444444", fg="black", font=("Arial", 14, "bold"))
-        self.start_button.grid(row=2, column=0, columnspan=3, pady=10)
+    def restart_game_with_settings(self):
+        """条件を再設定できるように、設定画面に戻す"""
+        self.result_label.pack_forget()
+        self.restart_buttons_frame.pack_forget()
+        self.canvas.unbind("<Button-1>")
+        # 盤面をクリア
+        self.canvas.delete("all")
+        self.create_board_lines()
+        # 設定画面を再構築
+        self.build_settings_ui()

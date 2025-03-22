@@ -11,7 +11,7 @@ class TicTacToe:
             player_first (bool): 人間が先手かどうか (True: 先手, False: 後手)
             agent_type (str): エージェントの種類 ("ランダム" または "Minimax")
         """
-        self.board = [[" " for _ in range(3)] for _ in range(3)]  # 3x3 の盤面を初期化
+        self.board = [[" " for _ in range(3)] for _ in range(3)]
         # 三目並べでは "X" が必ず先手となるため、current_player を "X" に固定する
         self.current_player = "X"
         if player_first:
@@ -20,19 +20,11 @@ class TicTacToe:
         else:
             self.human_player = "O"
             self.agent_player = "X"
-        self.agent = self.create_agent(agent_type)  # エージェントを生成
-        self.winner_line = None  # 勝者のラインを初期化
+        self.agent = self.create_agent(agent_type)
+        self.winner_line = None
+        self.game_over = False  # ゲーム終了フラグの初期化
 
     def create_agent(self, agent_type):
-        """
-        エージェントを生成する
-
-        Args:
-            agent_type (str): エージェントの種類 ("ランダム" または "Minimax")
-
-        Returns:
-            BaseAgent: 生成されたエージェント
-        """
         if agent_type == "ランダム":
             return RandomAgent(self.agent_player)
         elif agent_type == "Minimax":
@@ -51,6 +43,10 @@ class TicTacToe:
         Returns:
             bool: 手を打てたかどうか (True: 打てた, False: 打てなかった)
         """
+        # ゲーム終了している場合は手を打たない
+        if self.game_over:
+            return False
+
         if self.board[row][col] == " ":
             self.board[row][col] = self.current_player
             return True
@@ -66,27 +62,26 @@ class TicTacToe:
         for i in range(3):
             if self.board[i][0] == self.board[i][1] == self.board[i][2] != " ":
                 self.winner_line = ((i, 0), (i, 2))
+                self.game_over = True
                 return self.board[i][0]
             if self.board[0][i] == self.board[1][i] == self.board[2][i] != " ":
                 self.winner_line = ((0, i), (2, i))
+                self.game_over = True
                 return self.board[0][i]
         if self.board[0][0] == self.board[1][1] == self.board[2][2] != " ":
             self.winner_line = ((0, 0), (2, 2))
+            self.game_over = True
             return self.board[0][0]
         if self.board[0][2] == self.board[1][1] == self.board[2][0] != " ":
             self.winner_line = ((0, 2), (2, 0))
+            self.game_over = True
             return self.board[0][2]
         if self.is_board_full():
+            self.game_over = True
             return "draw"
         return None
 
     def is_board_full(self):
-        """
-        盤面が埋まっているかどうかを判定する
-
-        Returns:
-            bool: 盤面が埋まっているかどうか (True: 埋まっている, False: 空きがある)
-        """
         for row in self.board:
             for cell in row:
                 if cell == " ":
@@ -94,21 +89,12 @@ class TicTacToe:
         return True
 
     def switch_player(self):
-        """
-        プレイヤーを切り替える
-        """
         self.current_player = "O" if self.current_player == "X" else "X"
 
     def agent_move(self):
-        """
-        エージェントに手を打たせる
-
-        Returns:
-            bool: エージェントが手を打てたかどうか (True: 打てた, False: 打てなかった)
-        """
         move = self.agent.get_move(self.board)
         if move is not None:
             row, col = move
             self.make_move(row, col)
             return True
-        return False  # エージェントが手を打てなかった
+        return False
