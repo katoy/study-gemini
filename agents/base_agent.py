@@ -1,37 +1,31 @@
 """
-agents/base_agent.py: Abstract base class for all agents.
+base_agent.py: Defines the base class for agents.
 """
 
-from abc import ABC, abstractmethod
 
-class BaseAgent(ABC):
+class BaseAgent:
+    """
+    Base class for all agents.
+    """
+
     def __init__(self, player: str):
-        self.player = player
-
-    @abstractmethod
-    def get_move(self, board):
         """
-        Determine a move given the current board.
+        Initializes the BaseAgent.
 
         Args:
-            board: Current board state.
+            player (str): The player this agent represents ("X" or "O").
+        """
+        self.player = player
+
+    def get_move(self, board: list) -> tuple[int, int] | None:
+        """
+        Gets the agent's move.
+
+        Args:
+            board (list): The current game board.
 
         Returns:
-            Tuple (row, col) representing the move, or None if no move is possible.
+            tuple[int, int] | None: The (row, col) of the move, or None if
+                no move is possible.
         """
-        pass
-
-    def check_winner(self, board):
-        # Simple winner check (can be overridden if needed)
-        for i in range(3):
-            if board[i][0] == board[i][1] == board[i][2] != " ":
-                return board[i][0]
-            if board[0][i] == board[1][i] == board[2][i] != " ":
-                return board[0][i]
-        if board[0][0] == board[1][1] == board[2][2] != " ":
-            return board[0][0]
-        if board[0][2] == board[1][1] == board[2][0] != " ":
-            return board[0][2]
-        if all(cell != " " for row in board for cell in row):
-            return "draw"
-        return None
+        raise NotImplementedError("Subclasses must implement this method")
