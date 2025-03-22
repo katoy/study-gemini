@@ -123,6 +123,7 @@ class TicTacToeGUI:
 
     def draw_board(self):
         self.canvas.delete("all")
+        self.canvas.delete("winner_cell") # 以前のハイライトを削除
         self.create_board_lines()
         for i in range(3):
             for j in range(3):
@@ -164,10 +165,7 @@ class TicTacToeGUI:
     def game_over(self, winner):
         self.canvas.unbind("<Button-1>")
         if self.game.winner_line:
-            (row1, col1), (row2, col2) = self.game.winner_line
-            x1, y1 = col1 * 100 + 50, row1 * 100 + 50
-            x2, y2 = col2 * 100 + 50, row2 * 100 + 50
-            self.canvas.create_line(x1, y1, x2, y2, fill="yellow", width=5)
+            self.highlight_winner_cells(self.game.winner_line)
         if winner == "draw":
             self.result_label.config(text="引き分けです！")
         else:
@@ -177,9 +175,22 @@ class TicTacToeGUI:
         self.master.update_idletasks()
         self.master.update()  # これでウィジェットのマッピング状態を更新
 
+    def highlight_winner_cells(self, winner_line):
+        """勝利した3つのマス目をハイライトする"""
+        for row, col in winner_line:
+            x1, y1 = col * 100, row * 100
+            x2, y2 = (col + 1) * 100, (row + 1) * 100
+            self.canvas.create_rectangle(x1, y1, x2, y2, fill="yellow", tags="winner_cell")
+            # マス目の上に "X" または "O" を再描画
+            if self.game.board[row][col] == "X":
+                self.draw_x(x1 + 10, y1 + 10, x2 - 10, y2 - 10)
+            elif self.game.board[row][col] == "O":
+                self.draw_o(x1 + 10, y1 + 10, x2 - 10, y2 - 10)
+
     def restart_game_same_settings(self):
         self.result_label.pack_forget()
         self.restart_buttons_frame.pack_forget()
+        self.canvas.delete("winner_cell") # 以前のハイライトを削除
         self.game = TicTacToe(self.selected_player, self.selected_agent)
         self.draw_board()
         self.canvas.bind("<Button-1>", self.on_canvas_click)
@@ -192,5 +203,6 @@ class TicTacToeGUI:
         self.restart_buttons_frame.pack_forget()
         self.canvas.unbind("<Button-1>")
         self.canvas.delete("all")
+        self.canvas.delete("winner_cell") # 以前のハイライトを削除
         self.create_board_lines()
         self.build_settings_ui()

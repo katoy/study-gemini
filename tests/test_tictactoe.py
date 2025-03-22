@@ -27,31 +27,34 @@ class TestTicTacToe(unittest.TestCase):
         self.assertEqual(self.game.current_player, "O" if current == "X" else "X")
 
     def test_check_winner_horizontal(self):
-        """横一列が揃った場合に勝者が正しく返るかを確認する"""
+        """横一列が揃った場合に勝者が正しく返り、winner_lineが正しく設定されるかを確認する"""
         self.game.board = [
             ["X", "X", "X"],
             ["O", " ", " "],
             ["O", " ", " "]
         ]
         self.assertEqual(self.game.check_winner(), "X")
+        self.assertEqual(self.game.winner_line, ((0, 0), (0, 1), (0, 2)))
 
     def test_check_winner_vertical(self):
-        """縦一列が揃った場合に勝者が正しく返るかを確認する"""
+        """縦一列が揃った場合に勝者が正しく返り、winner_lineが正しく設定されるかを確認する"""
         self.game.board = [
             ["O", "X", " "],
             ["O", "X", " "],
             [" ", "X", " "]
         ]
         self.assertEqual(self.game.check_winner(), "X")
+        self.assertEqual(self.game.winner_line, ((0, 1), (1, 1), (2, 1)))
 
     def test_check_winner_diagonal(self):
-        """斜めが揃った場合に勝者が正しく返るかを確認する"""
+        """斜めが揃った場合に勝者が正しく返り、winner_lineが正しく設定されるかを確認する"""
         self.game.board = [
             ["O", "X", "X"],
             [" ", "O", " "],
             ["X", " ", "O"]
         ]
         self.assertEqual(self.game.check_winner(), "O")
+        self.assertEqual(self.game.winner_line, ((0, 0), (1, 1), (2, 2)))
 
     def test_check_winner_draw(self):
         """盤面が埋まっていて引き分けの場合、"draw" が返るかを確認する"""
