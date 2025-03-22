@@ -91,6 +91,7 @@ class TicTacToeGUI:
         self.start_button.grid(row=2, column=0, columnspan=3, pady=10)
 
     def create_board_lines(self):
+        """盤面の線を描画する"""
         for i in range(1, 3):
             self.canvas.create_line(i * 100, 0, i * 100, 300, fill="white", width=3)
             self.canvas.create_line(0, i * 100, 300, i * 100, fill="white", width=3)
@@ -173,6 +174,8 @@ class TicTacToeGUI:
             self.result_label.config(text=f"{winner}の勝ちです！")
         self.result_label.pack()
         self.restart_buttons_frame.pack(pady=10)
+        self.master.update_idletasks()
+        self.master.update()  # これでウィジェットのマッピング状態を更新
 
     def restart_game_same_settings(self):
         self.result_label.pack_forget()
@@ -181,7 +184,6 @@ class TicTacToeGUI:
         self.draw_board()
         self.canvas.bind("<Button-1>", self.on_canvas_click)
         self.update_game_info()
-        # 修正：人間が後手の場合、エージェントの初手を実行する
         if not self.selected_player:
             self.agent_turn()
 

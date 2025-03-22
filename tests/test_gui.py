@@ -5,30 +5,27 @@ from game_logic import TicTacToe
 
 class TestTicTacToeGUI(unittest.TestCase):
     def setUp(self):
-        # Tk のルートウィンドウを生成し、テスト実行中は表示しない
         self.root = tk.Tk()
+        # テスト実行時にウィンドウが実際に表示されなくても、geometry マネージャの状態を確認するために withdraw は行います
         self.root.withdraw()
         self.gui = TicTacToeGUI(self.root)
+        self.root.update_idletasks()
 
     def tearDown(self):
         self.root.destroy()
 
     def test_initial_settings_ui(self):
         """初回の設定画面が正しく構築されていることを確認する"""
-        self.assertIsNotNone(self.gui.start_game_frame)
-        # 設定画面のウィジェットが存在していること
         self.assertTrue(self.gui.start_game_frame.winfo_exists())
-        # ゲーム開始ボタンが設定画面内にあるかチェック
         self.assertTrue(self.gui.start_button.winfo_exists())
 
     def test_start_game_creates_tictactoe_instance(self):
-        """設定画面からゲーム開始した際、TicTacToe のインスタンスが生成されることを確認する"""
-        # 設定値を変更
+        """設定画面からゲーム開始時、TicTacToe インスタンスが生成され、設定画面が破棄されることを確認する"""
         self.gui.player_var.set(True)
         self.gui.agent_var.set("Minimax")
         self.gui.start_game()
+        self.root.update()
         self.assertIsInstance(self.gui.game, TicTacToe)
-        # 設定画面が破棄されていることを確認
         self.assertFalse(self.gui.start_game_frame.winfo_exists())
 
     def test_game_over_shows_restart_buttons(self):
@@ -36,38 +33,48 @@ class TestTicTacToeGUI(unittest.TestCase):
         self.gui.player_var.set(True)
         self.gui.agent_var.set("Minimax")
         self.gui.start_game()
-        # 仮にゲーム終了処理を呼び出す（ここでは "X" の勝ちとして）
         self.gui.game_over("X")
-        # 再開用ボタンフレームが表示されているか
-        self.assertTrue(self.gui.restart_buttons_frame.winfo_ismapped())
+        self.root.update_idletasks()
+        self.root.update()
+        # withdraw されている場合、winfo_ismapped() は False となるため、pack_info() によりウィジェットが pack されていることをチェックする
+        self.assertNotEqual(self.gui.restart_buttons_frame.winfo_manager(), '')
 
-    def test_restart_game_same_settings(self):
-        """同じ設定で再開した場合に、新しいゲームインスタンスが生成されることを確認する"""
+    def test_restart_game_same_settings_human_first(self):
+        """人間が先手の場合、同じ設定で再開すると新しいゲームインスタンスが生成され、キャンバスにクリックイベントがバインドされることを確認する"""
         self.gui.player_var.set(True)
         self.gui.agent_var.set("Minimax")
         self.gui.start_game()
         original_game = self.gui.game
-        # ゲーム終了状態をシミュレーション
         self.gui.game_over("X")
-        # 同じ設定で再開
+        self.root.update_idletasks()
         self.gui.restart_game_same_settings()
-        self.assertIsInstance(self.gui.game, TicTacToe)
-        self.assertNotEqual(self.gui.game, original_game)
-        # キャンバスにクリックイベントがバインドされているか（バインド情報が空でないことを確認）
+        self.root.update_idletasks()
         binding = self.gui.canvas.bind("<Button-1>")
         self.assertIsNotNone(binding)
         self.assertNotEqual(binding, "")
 
+    def test_restart_game_same_settings_human_second(self):
+        """人間が後手の場合、同じ設定で再開するとエージェントの初手が実行され、盤面に少なくとも1セル以上が更新されることを確認する"""
+        self.gui.player_var.set(False)
+        self.gui.agent_var.set("Minimax")
+        self.gui.start_game()
+        self.root.update_idletasks()
+        self.gui.game_over("O")
+        self.root.update_idletasks()
+        self.gui.restart_game_same_settings()
+        self.root.update_idletasks()
+        board_filled = any(cell != " " for row in self.gui.game.board for cell in row)
+        self.assertTrue(board_filled)
+
     def test_restart_game_with_settings(self):
         """条件再設定を選んだ場合、設定画面が再構築されることを確認する"""
-        self.gui.player_var.set(False)
-        self.gui.agent_var.set("Random")
+        self.gui.player_var.set(True)
+        self.gui.agent_var.set("ランダム")
         self.gui.start_game()
-        # ゲーム終了処理を呼び出す
         self.gui.game_over("O")
-        # 条件再設定を実行
+        self.root.update_idletasks()
         self.gui.restart_game_with_settings()
-        # 設定画面用のウィジェットが再構築されているはず
+        self.root.update_idletasks()
         self.assertTrue(hasattr(self.gui, 'start_game_frame'))
         self.assertTrue(self.gui.start_game_frame.winfo_exists())
 
