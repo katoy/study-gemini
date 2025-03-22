@@ -1,7 +1,3 @@
-"""
-gui.py: Implements the graphical user interface (GUI) for the Tic Tac Toe game using Tkinter.
-"""
-
 import tkinter as tk
 from game_logic import TicTacToe
 
@@ -20,8 +16,8 @@ class TicTacToeGUI:
         self.result_label.pack_forget()
 
         # 保存する設定（再起動時に利用）
-        self.selected_player = None  # True: human plays as X (先手)
-        self.selected_agent = None   # "ランダム" or "Minimax"
+        self.selected_player = None  # True: 人間が先手, False: 人間が後手
+        self.selected_agent = None   # "ランダム" または "Minimax"
 
         self.build_settings_ui()
 
@@ -50,11 +46,13 @@ class TicTacToeGUI:
         self.agent_info_label.pack(side="left", padx=10)
 
     def build_settings_ui(self):
-        """Construct the settings UI for game options."""
+        """設定画面を構築する（先手/後手、エージェント選択）"""
         self.start_game_frame = tk.Frame(self.master, bg="#333333")
         self.start_game_frame.pack()
 
-        self.player_label = tk.Label(self.start_game_frame, text="先手/後手:", bg="#333333", fg="#EEEEEE", font=("Arial", 14, "bold"))
+        self.player_label = tk.Label(
+            self.start_game_frame, text="先手/後手:", bg="#333333", fg="#EEEEEE", font=("Arial", 14, "bold")
+        )
         self.player_label.grid(row=0, column=0, padx=5, pady=5)
 
         self.player_var = tk.BooleanVar(value=True)
@@ -69,7 +67,9 @@ class TicTacToeGUI:
         )
         self.player_second_radio.grid(row=0, column=2, padx=5, pady=5)
 
-        self.agent_label = tk.Label(self.start_game_frame, text="エージェント:", bg="#333333", fg="#EEEEEE", font=("Arial", 14, "bold"))
+        self.agent_label = tk.Label(
+            self.start_game_frame, text="エージェント:", bg="#333333", fg="#EEEEEE", font=("Arial", 14, "bold")
+        )
         self.agent_label.grid(row=1, column=0, padx=5, pady=5)
 
         self.agent_var = tk.StringVar(value="ランダム")
@@ -101,6 +101,7 @@ class TicTacToeGUI:
         self.game = TicTacToe(self.selected_player, self.selected_agent)
         self.start_game_frame.destroy()
         self.draw_board()
+        # 人間が後手の場合、エージェントが先手となるため初手を実行
         if not self.selected_player:
             self.agent_turn()
         self.canvas.bind("<Button-1>", self.on_canvas_click)
@@ -180,6 +181,9 @@ class TicTacToeGUI:
         self.draw_board()
         self.canvas.bind("<Button-1>", self.on_canvas_click)
         self.update_game_info()
+        # 修正：人間が後手の場合、エージェントの初手を実行する
+        if not self.selected_player:
+            self.agent_turn()
 
     def restart_game_with_settings(self):
         self.result_label.pack_forget()
