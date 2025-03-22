@@ -1,13 +1,15 @@
-# --- main.py ---
+#!/usr/bin/env python3
+"""
+Main entry point for the Tic Tac Toe game.
+"""
+
 import tkinter as tk
-from tkinter import messagebox
-from game_logic import TicTacToe
 from gui import TicTacToeGUI
 
 def main():
     root = tk.Tk()
-    gui = TicTacToeGUI(root)
+    TicTacToeGUI(root)
     root.mainloop()
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

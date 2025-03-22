@@ -1,46 +1,48 @@
+"""
+gui.py: Implements the graphical user interface (GUI) for the Tic Tac Toe game using Tkinter.
+"""
+
 import tkinter as tk
-from tkinter import messagebox
 from game_logic import TicTacToe
 
 class TicTacToeGUI:
     def __init__(self, master):
         self.master = master
         master.title("三目並べ")
-        master.configure(bg="#333333")  # Dark background
+        master.configure(bg="#333333")
 
-        self.game = None
         self.canvas = tk.Canvas(master, width=300, height=300, bg="#333333", highlightthickness=0)
         self.canvas.pack(pady=20)
-
         self.create_board_lines()
 
-        # 勝敗結果を表示するためのラベル
         self.result_label = tk.Label(master, text="", bg="#333333", fg="yellow", font=("Arial", 20, "bold"))
         self.result_label.pack(pady=10)
-        self.result_label.pack_forget()  # 初期状態では非表示
+        self.result_label.pack_forget()
 
-        # 設定保持用の変数（再スタート時に利用）
-        self.selected_player = None  # True: 先手, False: 後手
-        self.selected_agent = None   # "ランダム" または "Minimax"
+        # 保存する設定（再起動時に利用）
+        self.selected_player = None  # True: human plays as X (先手)
+        self.selected_agent = None   # "ランダム" or "Minimax"
 
-        # 設定画面（初回はここからゲーム開始）
         self.build_settings_ui()
 
-        # 再開用ボタンフレーム（ゲーム終了後に表示）
+        # 再開用ボタンフレーム（ゲーム終了時に表示）
         self.restart_buttons_frame = tk.Frame(master, bg="#333333")
         self.restart_same_button = tk.Button(
-            self.restart_buttons_frame, text="同じ設定で再開",
-            command=self.restart_game_same_settings, bg="#444444", fg="black", font=("Arial", 14, "bold")
+            self.restart_buttons_frame,
+            text="同じ設定で再開",
+            command=self.restart_game_same_settings,
+            bg="#444444", fg="black", font=("Arial", 14, "bold")
         )
         self.restart_same_button.pack(side=tk.LEFT, padx=5)
         self.restart_reset_button = tk.Button(
-            self.restart_buttons_frame, text="条件再設定",
-            command=self.restart_game_with_settings, bg="#444444", fg="black", font=("Arial", 14, "bold")
+            self.restart_buttons_frame,
+            text="条件再設定",
+            command=self.restart_game_with_settings,
+            bg="#444444", fg="black", font=("Arial", 14, "bold")
         )
         self.restart_reset_button.pack(side=tk.LEFT, padx=5)
-        self.restart_buttons_frame.pack_forget()  # 初期状態では非表示
+        self.restart_buttons_frame.pack_forget()
 
-        # ゲーム情報表示用フレーム
         self.game_info_frame = tk.Frame(master, bg="#333333")
         self.player_info_label = tk.Label(self.game_info_frame, text="", bg="#333333", fg="#EEEEEE", font=("Arial", 12, "bold"))
         self.player_info_label.pack(side="left", padx=10)
@@ -48,13 +50,11 @@ class TicTacToeGUI:
         self.agent_info_label.pack(side="left", padx=10)
 
     def build_settings_ui(self):
-        """設定画面を構築する（先手/後手、エージェント選択）"""
+        """Construct the settings UI for game options."""
         self.start_game_frame = tk.Frame(self.master, bg="#333333")
         self.start_game_frame.pack()
 
-        self.player_label = tk.Label(
-            self.start_game_frame, text="先手/後手:", bg="#333333", fg="#EEEEEE", font=("Arial", 14, "bold")
-        )
+        self.player_label = tk.Label(self.start_game_frame, text="先手/後手:", bg="#333333", fg="#EEEEEE", font=("Arial", 14, "bold"))
         self.player_label.grid(row=0, column=0, padx=5, pady=5)
 
         self.player_var = tk.BooleanVar(value=True)
@@ -69,9 +69,7 @@ class TicTacToeGUI:
         )
         self.player_second_radio.grid(row=0, column=2, padx=5, pady=5)
 
-        self.agent_label = tk.Label(
-            self.start_game_frame, text="エージェント:", bg="#333333", fg="#EEEEEE", font=("Arial", 14, "bold")
-        )
+        self.agent_label = tk.Label(self.start_game_frame, text="エージェント:", bg="#333333", fg="#EEEEEE", font=("Arial", 14, "bold"))
         self.agent_label.grid(row=1, column=0, padx=5, pady=5)
 
         self.agent_var = tk.StringVar(value="ランダム")
@@ -86,7 +84,6 @@ class TicTacToeGUI:
         )
         self.minimax_agent_radio.grid(row=1, column=2, padx=5, pady=5)
 
-        # ゲーム開始ボタン
         self.start_button = tk.Button(
             self.start_game_frame, text="ゲーム開始", command=self.start_game,
             bg="#444444", fg="black", font=("Arial", 14, "bold")
@@ -99,20 +96,13 @@ class TicTacToeGUI:
             self.canvas.create_line(0, i * 100, 300, i * 100, fill="white", width=3)
 
     def start_game(self):
-        # 設定を保持
         self.selected_player = self.player_var.get()
         self.selected_agent = self.agent_var.get()
-
         self.game = TicTacToe(self.selected_player, self.selected_agent)
-
-        # 設定画面を破棄
         self.start_game_frame.destroy()
-
         self.draw_board()
-        # 人間が後手の場合は、エージェントが先手なので先にエージェントの手を実行
         if not self.selected_player:
             self.agent_turn()
-        # キャンバスにクリックイベントをバインド
         self.canvas.bind("<Button-1>", self.on_canvas_click)
         self.game_info_frame.pack(pady=10)
         self.update_game_info()
@@ -170,7 +160,6 @@ class TicTacToeGUI:
                 self.game.switch_player()
 
     def game_over(self, winner):
-        # ゲーム終了時、キャンバスのクリックイベントを解除
         self.canvas.unbind("<Button-1>")
         if self.game.winner_line:
             (row1, col1), (row2, col2) = self.game.winner_line
@@ -182,26 +171,20 @@ class TicTacToeGUI:
         else:
             self.result_label.config(text=f"{winner}の勝ちです！")
         self.result_label.pack()
-        # ゲーム終了後は再開用ボタンフレームを表示
         self.restart_buttons_frame.pack(pady=10)
 
     def restart_game_same_settings(self):
-        """同じ設定で新しいゲームを開始する"""
         self.result_label.pack_forget()
         self.restart_buttons_frame.pack_forget()
-        # 新しいゲームオブジェクトを作成
         self.game = TicTacToe(self.selected_player, self.selected_agent)
         self.draw_board()
         self.canvas.bind("<Button-1>", self.on_canvas_click)
         self.update_game_info()
 
     def restart_game_with_settings(self):
-        """条件を再設定できるように、設定画面に戻す"""
         self.result_label.pack_forget()
         self.restart_buttons_frame.pack_forget()
         self.canvas.unbind("<Button-1>")
-        # 盤面をクリア
         self.canvas.delete("all")
         self.create_board_lines()
-        # 設定画面を再構築
         self.build_settings_ui()
