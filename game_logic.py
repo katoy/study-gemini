@@ -1,6 +1,7 @@
 # game_logic.py
 from agents.random_agent import RandomAgent
 from agents.minimax_agent import MinimaxAgent
+from agents.database_agent import DatabaseAgent  # 追加
 
 
 class TicTacToe:
@@ -15,7 +16,7 @@ class TicTacToe:
         Args:
             player_select (bool): True if the human plays first (as "X"),
                 False otherwise.
-            agent_type (str): Agent type ("ランダム" or "Minimax").
+            agent_type (str): Agent type ("ランダム", "Minimax", or "Database").
         """
         self.board = [[" " for _ in range(3)] for _ in range(3)]
         # In Tic Tac Toe, "X" always goes first.
@@ -48,6 +49,8 @@ class TicTacToe:
             return RandomAgent(self.agent_player)
         elif agent_type == "Minimax":
             return MinimaxAgent(self.agent_player)
+        elif agent_type == "Database":  # 追加
+            return DatabaseAgent(self.agent_player)  # 追加
         else:
             raise ValueError("Invalid agent type provided")
 
