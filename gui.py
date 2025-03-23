@@ -45,10 +45,10 @@ class TicTacToeGUI:
         self.board_drawer = BoardDrawer(self, self.canvas)
         self.game_info_ui = GameInfoUI(self, master)
 
-        # Frame for restart buttons (displayed when the game ends)
-        self.restart_buttons_frame = tk.Frame(master, bg="#333333")
+        # Frame for control buttons (displayed always)
+        self.control_buttons_frame = tk.Frame(master, bg="#333333")
         self.restart_same_button = tk.Button(
-            self.restart_buttons_frame,
+            self.control_buttons_frame,
             text="同じ設定で再開",
             command=self.restart_game_same_settings,
             bg="#444444",
@@ -57,7 +57,7 @@ class TicTacToeGUI:
         )
         self.restart_same_button.pack(side=tk.LEFT, padx=5)
         self.restart_reset_button = tk.Button(
-            self.restart_buttons_frame,
+            self.control_buttons_frame,
             text="条件再設定",
             command=self.restart_game_with_settings,
             bg="#444444",
@@ -65,16 +65,16 @@ class TicTacToeGUI:
             font=("Arial", 14, "bold"),
         )
         self.restart_reset_button.pack(side=tk.LEFT, padx=5)
-        self.restart_buttons_frame.pack_forget()
+        self.control_buttons_frame.pack(pady=10)
 
-        self.settings_ui.build_settings_ui()
+        self.settings_ui.build_settings_ui() # 移動
 
     def start_game(self):
         """Starts the game."""
         self.selected_player = self.settings_ui.player_var.get()
         self.selected_agent = self.settings_ui.agent_var.get()
         self.game = TicTacToe(self.selected_player, self.selected_agent)
-        self.settings_ui.start_game_frame.destroy()
+        # self.settings_ui.start_game_frame.destroy() # 削除
         self.board_drawer.draw_board()
         # If the human is second, the agent goes first
         if not self.selected_player:
@@ -91,6 +91,9 @@ class TicTacToeGUI:
 
     def cell_clicked(self, row, col):
         """Handles a cell click event."""
+        # ゲームが終了している場合は処理をスキップ
+        if self.game.game_over:
+            return
         if self.game.current_player == self.game.human_player:
             if self.game.make_move(row, col):
                 self.board_drawer.draw_board()
@@ -122,14 +125,12 @@ class TicTacToeGUI:
         else:
             self.result_label.config(text=f"{winner}の勝ちです！")
         self.result_label.pack()
-        self.restart_buttons_frame.pack(pady=10)
         self.master.update_idletasks()
         self.master.update()
 
     def restart_game_same_settings(self):
         """Restarts the game with the same settings."""
         self.result_label.pack_forget()
-        self.restart_buttons_frame.pack_forget()
         self.board_drawer.remove_winner_highlight()
         self.game = TicTacToe(self.selected_player, self.selected_agent)
         self.board_drawer.draw_board()
@@ -141,7 +142,6 @@ class TicTacToeGUI:
     def restart_game_with_settings(self):
         """Restarts the game with new settings."""
         self.result_label.pack_forget()
-        self.restart_buttons_frame.pack_forget()
         self.canvas.unbind("<Button-1>")
         self.canvas.delete("all")
         self.board_drawer.remove_winner_highlight()

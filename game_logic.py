@@ -31,7 +31,7 @@ class TicTacToe:
             self.agent_player = "X"
         self.agent = self._create_agent(agent_type)
         self.winner_line = None
-        self.game_over = False
+        self.game_over = False # 追加
 
     def _create_agent(self, agent_type: str):
         """
@@ -64,7 +64,7 @@ class TicTacToe:
         Returns:
             bool: True if the move was made, False otherwise.
         """
-        if self.game_over:
+        if self.game_over: # 追加
             return False
         if self.board[row][col] == " ":
             self.board[row][col] = self.current_player
@@ -88,7 +88,7 @@ class TicTacToe:
                 != " "
             ):
                 self.winner_line = ((i, 0), (i, 1), (i, 2))  # All 3 cells
-                self.game_over = True
+                self.game_over = True # 追加
                 return self.board[i][0]
             if (
                 self.board[0][i]
@@ -97,7 +97,7 @@ class TicTacToe:
                 != " "
             ):
                 self.winner_line = ((0, i), (1, i), (2, i))  # All 3 cells
-                self.game_over = True
+                self.game_over = True # 追加
                 return self.board[0][i]
         # Check diagonals
         if (
@@ -107,7 +107,7 @@ class TicTacToe:
             != " "
         ):
             self.winner_line = ((0, 0), (1, 1), (2, 2))  # All 3 cells
-            self.game_over = True
+            self.game_over = True # 追加
             return self.board[0][0]
         if (
             self.board[0][2]
@@ -116,11 +116,11 @@ class TicTacToe:
             != " "
         ):
             self.winner_line = ((0, 2), (1, 1), (2, 0))  # All 3 cells
-            self.game_over = True
+            self.game_over = True # 追加
             return self.board[0][2]
         # Check for draw
         if self._is_board_full():
-            self.game_over = True
+            self.game_over = True # 追加
             return "draw"
         return None
 
