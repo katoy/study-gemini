@@ -34,7 +34,7 @@ class SettingsUI:
 
         self.player_first_radio = tk.Radiobutton(
             self.settings_frame,
-            text="先手",
+            text="あなた",
             variable=self.player_var,
             value=True,
             bg="#333333",
@@ -45,7 +45,7 @@ class SettingsUI:
         self.player_first_radio.pack(pady=5)
         self.player_second_radio = tk.Radiobutton(
             self.settings_frame,
-            text="後手",
+            text="マシン",
             variable=self.player_var,
             value=False,
             bg="#333333",

@@ -8,18 +8,18 @@ class TicTacToe:
     Represents the Tic Tac Toe game logic.
     """
 
-    def __init__(self, player_first: bool, agent_type: str):
+    def __init__(self, player_select: bool, agent_type: str):
         """
         Initializes a new Tic Tac Toe game.
 
         Args:
-            player_first (bool): True if the human plays first (as "X"),
+            player_select (bool): True if the human plays first (as "X"),
                 False otherwise.
             agent_type (str): Agent type ("ランダム" or "Minimax").
         """
         self.board = [[" " for _ in range(3)] for _ in range(3)]
         # In Tic Tac Toe, "X" always goes first.
-        if player_first:
+        if player_select:
             self.human_player = "X"
             self.agent_player = "O"
             self.current_player = "X"
@@ -30,9 +30,6 @@ class TicTacToe:
         self.agent = self._create_agent(agent_type)
         self.winner_line = None
         self.game_over = False
-        # エージェントが最初に動くべき場合
-        # if self.current_player == self.agent_player: # 削除
-        #     self.agent_move() # 削除
 
     def _create_agent(self, agent_type: str):
         """
