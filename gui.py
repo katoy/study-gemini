@@ -39,7 +39,7 @@ class TicTacToeGUI:
         self.result_label.pack_forget()
 
         # Settings to be saved (used on restart)
-        self.selected_player = None  # True: Human first, False: Human second
+        self.selected_player = None  # True: Human select, False: Machine select
         self.selected_agent = None  # "ランダム" or "Minimax"
 
         self.settings_ui = SettingsUI(self, master)

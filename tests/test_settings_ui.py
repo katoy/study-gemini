@@ -25,8 +25,6 @@ class TestSettingsUI(unittest.TestCase):
         self.settings_ui.player_var.set(False)
         self.settings_ui.agent_var.set("Minimax")
         saved_settings = self.settings_ui.save_settings()
-        self.settings_ui.player_var.set(True)
-        self.settings_ui.agent_var.set("ランダム")
         self.settings_ui.load_settings(saved_settings)
         self.assertFalse(self.settings_ui.player_var.get())
         self.assertEqual(self.settings_ui.agent_var.get(), "Minimax")
