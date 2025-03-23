@@ -1,7 +1,4 @@
-"""
-game_logic.py: Implements the core logic of the Tic Tac Toe game.
-"""
-
+# game_logic.py
 from agents.random_agent import RandomAgent
 from agents.minimax_agent import MinimaxAgent
 
@@ -22,16 +19,20 @@ class TicTacToe:
         """
         self.board = [[" " for _ in range(3)] for _ in range(3)]
         # In Tic Tac Toe, "X" always goes first.
-        self.current_player = "X"
         if player_first:
             self.human_player = "X"
             self.agent_player = "O"
+            self.current_player = "X"
         else:
             self.human_player = "O"
             self.agent_player = "X"
+            self.current_player = "X"
         self.agent = self._create_agent(agent_type)
         self.winner_line = None
-        self.game_over = False # 追加
+        self.game_over = False
+        # エージェントが最初に動くべき場合
+        # if self.current_player == self.agent_player: # 削除
+        #     self.agent_move() # 削除
 
     def _create_agent(self, agent_type: str):
         """
@@ -64,7 +65,7 @@ class TicTacToe:
         Returns:
             bool: True if the move was made, False otherwise.
         """
-        if self.game_over: # 追加
+        if self.game_over:
             return False
         if self.board[row][col] == " ":
             self.board[row][col] = self.current_player
@@ -88,7 +89,7 @@ class TicTacToe:
                 != " "
             ):
                 self.winner_line = ((i, 0), (i, 1), (i, 2))  # All 3 cells
-                self.game_over = True # 追加
+                self.game_over = True
                 return self.board[i][0]
             if (
                 self.board[0][i]
@@ -97,7 +98,7 @@ class TicTacToe:
                 != " "
             ):
                 self.winner_line = ((0, i), (1, i), (2, i))  # All 3 cells
-                self.game_over = True # 追加
+                self.game_over = True
                 return self.board[0][i]
         # Check diagonals
         if (
@@ -107,7 +108,7 @@ class TicTacToe:
             != " "
         ):
             self.winner_line = ((0, 0), (1, 1), (2, 2))  # All 3 cells
-            self.game_over = True # 追加
+            self.game_over = True
             return self.board[0][0]
         if (
             self.board[0][2]
@@ -116,11 +117,11 @@ class TicTacToe:
             != " "
         ):
             self.winner_line = ((0, 2), (1, 1), (2, 0))  # All 3 cells
-            self.game_over = True # 追加
+            self.game_over = True
             return self.board[0][2]
         # Check for draw
         if self._is_board_full():
-            self.game_over = True # 追加
+            self.game_over = True
             return "draw"
         return None
 

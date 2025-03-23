@@ -10,6 +10,8 @@ class SettingsUI:
         self.gui = gui
         self.master = master
         self.settings_frame = None  # 初期化をNoneに変更
+        self.player_var = tk.BooleanVar(value=True)
+        self.agent_var = tk.StringVar(value="ランダム")
 
     def build_settings_ui(self):
         """Builds the settings UI (first/second, agent selection)."""
@@ -30,7 +32,6 @@ class SettingsUI:
         )
         self.player_label.pack(pady=5)
 
-        self.player_var = tk.BooleanVar(value=True)
         self.player_first_radio = tk.Radiobutton(
             self.settings_frame,
             text="先手",
@@ -63,7 +64,6 @@ class SettingsUI:
         )
         self.agent_label.pack(pady=5)
 
-        self.agent_var = tk.StringVar(value="ランダム")
         self.random_agent_radio = tk.Radiobutton(
             self.settings_frame,
             text="ランダム",
@@ -87,4 +87,38 @@ class SettingsUI:
         )
         self.minimax_agent_radio.pack(pady=5)
 
+        self.buttons_frame = tk.Frame(self.settings_frame, bg="#333333")
+        self.buttons_frame.pack(pady=10)
+
+        self.start_button = tk.Button(
+            self.buttons_frame,
+            text="ゲーム開始",
+            command=self.start_game,
+            bg="#444444",
+            fg="black",
+            font=("Arial", 14, "bold"),
+        )
+        self.start_button.pack(side=tk.LEFT, padx=5)
+
+        self.stop_button = tk.Button(
+            self.buttons_frame,
+            text="ゲーム中断",
+            command=self.gui.stop_game,
+            bg="#444444",
+            fg="black",
+            font=("Arial", 14, "bold"),
+        )
+        self.stop_button.pack(side=tk.LEFT, padx=5)
+
+    def start_game(self):
         self.gui.start_game()
+
+    def save_settings(self):
+        """Saves the current settings."""
+        return self.player_var.get(), self.agent_var.get()
+
+    def load_settings(self, settings):
+        """Loads the settings."""
+        player_setting, agent_setting = settings
+        self.player_var.set(player_setting)
+        self.agent_var.set(agent_setting)

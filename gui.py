@@ -1,3 +1,5 @@
+
+# gui.py
 import tkinter as tk
 
 from game_logic import TicTacToe
@@ -44,43 +46,43 @@ class TicTacToeGUI:
         self.settings_ui = SettingsUI(self, master)
         self.board_drawer = BoardDrawer(self, self.canvas)
         self.game_info_ui = GameInfoUI(self, master)
+        self.restart_button = None
+        self.control_buttons_frame = None
+        self.stop_button = None
+        self.saved_settings = None
 
-        # Frame for control buttons (displayed always)
-        self.control_buttons_frame = tk.Frame(master, bg="#333333")
-        self.restart_same_button = tk.Button(
-            self.control_buttons_frame,
-            text="同じ設定で再開",
-            command=self.restart_game_same_settings,
-            bg="#444444",
-            fg="black",
-            font=("Arial", 14, "bold"),
-        )
-        self.restart_same_button.pack(side=tk.LEFT, padx=5)
-        self.restart_reset_button = tk.Button(
-            self.control_buttons_frame,
-            text="条件再設定",
-            command=self.restart_game_with_settings,
-            bg="#444444",
-            fg="black",
-            font=("Arial", 14, "bold"),
-        )
-        self.restart_reset_button.pack(side=tk.LEFT, padx=5)
-        self.control_buttons_frame.pack(pady=10)
-
-        self.settings_ui.build_settings_ui() # 移動
+        self.settings_ui.build_settings_ui()
 
     def start_game(self):
         """Starts the game."""
+        if self.restart_button:
+            self.restart_button.destroy()
+        if self.control_buttons_frame:
+            self.control_buttons_frame.destroy()
         self.selected_player = self.settings_ui.player_var.get()
         self.selected_agent = self.settings_ui.agent_var.get()
         self.game = TicTacToe(self.selected_player, self.selected_agent)
-        # self.settings_ui.start_game_frame.destroy() # 削除
         self.board_drawer.draw_board()
+        self.game_info_ui.show_game_info()
+        self.board_drawer.remove_winner_highlight()
+        self.canvas.delete("all")
+        self.board_drawer.create_board_lines()
+        self.result_label.pack_forget()
+
         # If the human is second, the agent goes first
         if not self.selected_player:
-            self.agent_turn()
+            self.agent_first_move()
+
         self.canvas.bind("<Button-1>", self.on_canvas_click)
-        self.game_info_ui.show_game_info()
+        self.control_buttons_frame = tk.Frame(self.master, bg="#333333")
+        self.control_buttons_frame.pack(pady=10)
+
+    def agent_first_move(self):
+        """Handles the agent's first move."""
+        if self.game.current_player == self.game.agent_player:
+            self.game.agent_move()
+            self.board_drawer.draw_board()
+            self.game.switch_player()
 
     def on_canvas_click(self, event):
         """Handles the canvas click event."""
@@ -125,25 +127,35 @@ class TicTacToeGUI:
         else:
             self.result_label.config(text=f"{winner}の勝ちです！")
         self.result_label.pack()
+        if self.control_buttons_frame:
+            self.control_buttons_frame.destroy()
+        self.control_buttons_frame = tk.Frame(self.master, bg="#333333")
+        self.restart_button = tk.Button(
+            self.control_buttons_frame,
+            text="リスタート",
+            command=self.restart_game,
+            bg="#444444",
+            fg="black",
+            font=("Arial", 14, "bold"),
+        )
+        self.restart_button.pack(side=tk.LEFT, padx=5)
+        self.control_buttons_frame.pack(pady=10)
         self.master.update_idletasks()
         self.master.update()
 
-    def restart_game_same_settings(self):
+    def restart_game(self):
         """Restarts the game with the same settings."""
-        self.result_label.pack_forget()
-        self.board_drawer.remove_winner_highlight()
-        self.game = TicTacToe(self.selected_player, self.selected_agent)
-        self.board_drawer.draw_board()
-        self.canvas.bind("<Button-1>", self.on_canvas_click)
-        self.game_info_ui.update_game_info()
-        if not self.selected_player:
-            self.agent_turn()
+        self.start_game()
 
-    def restart_game_with_settings(self):
-        """Restarts the game with new settings."""
-        self.result_label.pack_forget()
+    def stop_game(self):
+        """Stops the game and returns to the settings screen."""
         self.canvas.unbind("<Button-1>")
-        self.canvas.delete("all")
         self.board_drawer.remove_winner_highlight()
-        self.board_drawer.create_board_lines()
+        self.result_label.pack_forget()
+        if self.control_buttons_frame:
+            self.control_buttons_frame.destroy()
+        self.saved_settings = self.settings_ui.save_settings()
+        if self.settings_ui.settings_frame:
+            self.settings_ui.settings_frame.pack()
         self.settings_ui.build_settings_ui()
+        self.settings_ui.load_settings(self.saved_settings)
