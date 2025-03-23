@@ -1,4 +1,3 @@
-
 # gui.py
 import tkinter as tk
 
@@ -46,7 +45,6 @@ class TicTacToeGUI:
         self.settings_ui = SettingsUI(self, master)
         self.board_drawer = BoardDrawer(self, self.canvas)
         self.game_info_ui = GameInfoUI(self, master)
-        self.restart_button = None
         self.control_buttons_frame = None
         self.stop_button = None
         self.saved_settings = None
@@ -55,8 +53,6 @@ class TicTacToeGUI:
 
     def start_game(self):
         """Starts the game."""
-        if self.restart_button:
-            self.restart_button.destroy()
         if self.control_buttons_frame:
             self.control_buttons_frame.destroy()
         self.selected_player = self.settings_ui.player_var.get()
@@ -129,23 +125,8 @@ class TicTacToeGUI:
         self.result_label.pack()
         if self.control_buttons_frame:
             self.control_buttons_frame.destroy()
-        self.control_buttons_frame = tk.Frame(self.master, bg="#333333")
-        self.restart_button = tk.Button(
-            self.control_buttons_frame,
-            text="リスタート",
-            command=self.restart_game,
-            bg="#444444",
-            fg="black",
-            font=("Arial", 14, "bold"),
-        )
-        self.restart_button.pack(side=tk.LEFT, padx=5)
-        self.control_buttons_frame.pack(pady=10)
         self.master.update_idletasks()
         self.master.update()
-
-    def restart_game(self):
-        """Restarts the game with the same settings."""
-        self.start_game()
 
     def stop_game(self):
         """Stops the game and returns to the settings screen."""
