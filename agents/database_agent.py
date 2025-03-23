@@ -1,70 +1,56 @@
-from agents.base_agent import BaseAgent
-import json
+import sqlite3
 import random
 import logging
 
-# ロギングの設定
+from agents.base_agent import BaseAgent
+
+# ロギング設定
 logging.basicConfig(level=logging.INFO)
+
 
 class DatabaseAgent(BaseAgent):
     """
-    完全解析済みデータベースを利用したエージェント
+    SQLite3 データベースを利用するエージェント
     """
 
-    def __init__(self, player: str, database_file: str = "tictactoe_database.json"):
+    def __init__(self, player: str, database_file: str = "tictactoe.db"):
         super().__init__(player)
-        self.database = self.load_database(database_file)
-
-    def load_database(self, database_file: str) -> dict:
-        """
-        データベースを読み込む
-        """
-        try:
-            with open(database_file, "r") as f:
-                return json.load(f)
-        except FileNotFoundError:
-            print(f"Error: Database file '{database_file}' not found.")
-            return {}
+        self.conn = sqlite3.connect(database_file)
+        self.cursor = self.conn.cursor()
 
     def get_move(self, board: list) -> tuple[int, int] | None:
         """
-        データベースからベストの打ち手を取得する
+        盤面に応じたベストムーブを取得。なければランダム。
         """
         board_str = self.board_to_string(board)
-        # logging.info(f"get_move: Original board: {board_str}")  # この行を削除
-        if board_str in self.database:
-            best_move_index = self.database[board_str]["best_move"]
-            # logging.info(f"get_move: best_move_index: {best_move_index}")  # この行を削除
-            if best_move_index == -1:
-                # logging.info("get_move: best_move_index is -1, returning None")  # この行を削除
-                return None
+        self.cursor.execute(
+            "SELECT best_move, result FROM tictactoe WHERE board = ?", (board_str,)
+        )
+        row = self.cursor.fetchone()
 
-            return self.index_to_move(best_move_index)
+        if row:
+            best_move, result = row
+            if best_move == -1:
+                return None
+            return self.index_to_move(best_move)
         else:
-            logging.warning("get_move: Board state not found in database. Making a random move.")
+            logging.warning("🔍 データベースに盤面が見つかりません。ランダムな手を選びます。")
             return self.get_random_move(board)
 
     def board_to_string(self, board: list) -> str:
-        """
-        盤面を文字列に変換する
-        """
         return "".join(cell if cell != " " else " " for row in board for cell in row)
 
     def index_to_move(self, index: int) -> tuple[int, int]:
-        """
-        インデックスを (row, col) の形式に変換する
-        """
         return index // 3, index % 3
 
     def get_random_move(self, board: list) -> tuple[int, int] | None:
-        """
-        ランダムな手を返す（データベースにない場合）
-        """
-        available_moves = []
-        for row in range(3):
-            for col in range(3):
-                if board[row][col] == " ":
-                    available_moves.append((row, col))
-        if available_moves:
-            return random.choice(available_moves)
-        return None
+        available_moves = [
+            (row, col)
+            for row in range(3)
+            for col in range(3)
+            if board[row][col] == " "
+        ]
+        return random.choice(available_moves) if available_moves else None
+
+    def __del__(self):
+        self.conn.close()

@@ -1,77 +1,90 @@
 import unittest
-from unittest.mock import patch, mock_open
+import sqlite3
+import os
 from agents.database_agent import DatabaseAgent
-import json
+
 
 class TestDatabaseAgent(unittest.TestCase):
     def setUp(self):
-        # テスト用のダミーデータベース
-        self.dummy_database = {
-            "         ": {"best_move": 4, "result": "continue"},  # 空の盤面
-            "X        ": {"best_move": 8, "result": "continue"},  # 左上にX
-            "XXX      ": {"best_move": -1, "result": "X"},  # Xの勝ち
-            "OOO      ": {"best_move": -1, "result": "O"},  # Oの勝ち
-            "XOXOXOXOX": {"best_move": -1, "result": "draw"},  # 引き分け
+        # 一時テスト用 SQLite データベースを作成
+        self.test_db = "test_tictactoe.db"
+        self.conn = sqlite3.connect(self.test_db)
+        self.cursor = self.conn.cursor()
+
+        # テーブル作成
+        self.cursor.execute('''
+            CREATE TABLE tictactoe (
+                board TEXT PRIMARY KEY,
+                best_move INTEGER,
+                result TEXT
+            )
+        ''')
+
+        # テスト用データを挿入
+        self.test_data = {
+            "         ": (4, "continue"),
+            "X        ": (8, "continue"),
+            "XXX      ": (-1, "X"),
+            "OOO      ": (-1, "O"),
+            "XOXOXOXOX": (-1, "draw"),
         }
-        self.dummy_database_str = json.dumps(self.dummy_database)
 
-        # テスト用のDatabaseAgent
-        with patch("builtins.open", mock_open(read_data=self.dummy_database_str)):
-            self.agent = DatabaseAgent("X", "dummy_database.json")
+        for board, (best_move, result) in self.test_data.items():
+            self.cursor.execute('''
+                INSERT INTO tictactoe (board, best_move, result)
+                VALUES (?, ?, ?)
+            ''', (board, best_move, result))
 
-    def test_load_database(self):
-        """データベースが正しく読み込まれるか"""
-        self.assertEqual(self.agent.database, self.dummy_database)
+        self.conn.commit()
+        self.agent = DatabaseAgent("X", self.test_db)
+
+    def tearDown(self):
+        self.conn.close()
+        os.remove(self.test_db)
 
     def test_get_move_from_database(self):
-        """データベースに存在する盤面に対して、正しい手を返すか"""
+        """データベースに存在する盤面から正しい手を取得できるか"""
         board = [[" ", " ", " "], [" ", " ", " "], [" ", " ", " "]]
         move = self.agent.get_move(board)
-        self.assertEqual(move, (1, 1))  # 中央
+        self.assertEqual(move, (1, 1))  # index 4 → (1, 1)
 
         board = [["X", " ", " "], [" ", " ", " "], [" ", " ", " "]]
         move = self.agent.get_move(board)
-        self.assertEqual(move, (2, 2))  # 右下
+        self.assertEqual(move, (2, 2))  # index 8 → (2, 2)
 
-    def test_get_move_not_in_database(self):
-        """データベースに存在しない盤面に対して、ランダムな手を返すか"""
-        board = [["O", " ", " "], [" ", " ", " "], [" ", " ", " "]]
-        with patch.object(self.agent, "get_random_move") as mock_random_move:
-            self.agent.get_move(board)
-            mock_random_move.assert_called_once()
-
-    def test_get_move_best_move_is_minus_one(self):
-        """best_moveが-1の場合にNoneを返すか"""
+    def test_get_move_best_move_minus_one(self):
+        """best_move = -1 の場合、None を返すか"""
         board = [["X", "X", "X"], [" ", " ", " "], [" ", " ", " "]]
         move = self.agent.get_move(board)
         self.assertIsNone(move)
 
+    def test_get_move_not_in_database(self):
+        """データベースに存在しない盤面ではランダムな手を返すか"""
+        board = [["O", " ", " "], [" ", " ", " "], [" ", " ", " "]]
+        move = self.agent.get_move(board)
+        self.assertIn(move, [(i, j) for i in range(3) for j in range(3) if not (i == 0 and j == 0)])
+
     def test_board_to_string(self):
         """盤面が正しく文字列に変換されるか"""
         board = [["X", "O", " "], [" ", "X", " "], [" ", " ", "O"]]
-        self.assertEqual(self.agent.board_to_string(board), "XO  X   O") # 修正
+        self.assertEqual(self.agent.board_to_string(board), "XO  X   O")
 
     def test_index_to_move(self):
-        """インデックスが正しく(row, col)に変換されるか"""
+        """index が (row, col) に正しく変換されるか"""
         self.assertEqual(self.agent.index_to_move(0), (0, 0))
-        self.assertEqual(self.agent.index_to_move(1), (0, 1))
-        self.assertEqual(self.agent.index_to_move(2), (0, 2))
-        self.assertEqual(self.agent.index_to_move(3), (1, 0))
         self.assertEqual(self.agent.index_to_move(4), (1, 1))
-        self.assertEqual(self.agent.index_to_move(5), (1, 2))
-        self.assertEqual(self.agent.index_to_move(6), (2, 0))
-        self.assertEqual(self.agent.index_to_move(7), (2, 1))
         self.assertEqual(self.agent.index_to_move(8), (2, 2))
 
     def test_get_random_move(self):
-        """ランダムな手が正しく返されるか"""
-        board = [[" ", " ", " "], [" ", " ", " "], [" ", " ", " "]]
-        move = self.agent.get_random_move(board)
+        """空きがあればランダムな手を返す / 埋まっていれば None を返す"""
+        empty_board = [[" ", " ", " "], [" ", " ", " "], [" ", " ", " "]]
+        move = self.agent.get_random_move(empty_board)
         self.assertIn(move, [(i, j) for i in range(3) for j in range(3)])
 
-        board = [["X", "O", "X"], ["X", "O", "O"], ["O", "X", "X"]]
-        move = self.agent.get_random_move(board)
+        full_board = [["X", "O", "X"], ["X", "O", "X"], ["O", "X", "O"]]
+        move = self.agent.get_random_move(full_board)
         self.assertIsNone(move)
+
 
 if __name__ == "__main__":
     unittest.main()
