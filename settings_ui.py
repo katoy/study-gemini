@@ -25,7 +25,7 @@ class SettingsUI:
 
         self.player_label = tk.Label(
             self.settings_frame,
-            text="先手/後手:",
+            text="先手:",
             bg="#333333",
             fg="#EEEEEE",
             font=("Arial", 14, "bold"),
