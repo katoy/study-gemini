@@ -1,6 +1,9 @@
 import tkinter as tk
 
 from game_logic import TicTacToe
+from settings_ui import SettingsUI
+from board_drawer import BoardDrawer
+from game_info_ui import GameInfoUI
 
 
 class TicTacToeGUI:
@@ -23,7 +26,6 @@ class TicTacToeGUI:
             master, width=300, height=300, bg="#333333", highlightthickness=0
         )
         self.canvas.pack(pady=20)
-        self.create_board_lines()
 
         self.result_label = tk.Label(
             master,
@@ -39,7 +41,9 @@ class TicTacToeGUI:
         self.selected_player = None  # True: Human first, False: Human second
         self.selected_agent = None  # "ランダム" or "Minimax"
 
-        self.build_settings_ui()
+        self.settings_ui = SettingsUI(self, master)
+        self.board_drawer = BoardDrawer(self, self.canvas)
+        self.game_info_ui = GameInfoUI(self, master)
 
         # Frame for restart buttons (displayed when the game ends)
         self.restart_buttons_frame = tk.Frame(master, bg="#333333")
@@ -63,135 +67,20 @@ class TicTacToeGUI:
         self.restart_reset_button.pack(side=tk.LEFT, padx=5)
         self.restart_buttons_frame.pack_forget()
 
-        self.game_info_frame = tk.Frame(master, bg="#333333")
-        self.player_info_label = tk.Label(
-            self.game_info_frame,
-            text="",
-            bg="#333333",
-            fg="#EEEEEE",
-            font=("Arial", 12, "bold"),
-        )
-        self.player_info_label.pack(side="left", padx=10)
-        self.agent_info_label = tk.Label(
-            self.game_info_frame,
-            text="",
-            bg="#333333",
-            fg="#EEEEEE",
-            font=("Arial", 12, "bold"),
-        )
-        self.agent_info_label.pack(side="left", padx=10)
-
-    def build_settings_ui(self):
-        """Builds the settings UI (first/second, agent selection)."""
-        self.start_game_frame = tk.Frame(self.master, bg="#333333")
-        self.start_game_frame.pack()
-
-        self.player_label = tk.Label(
-            self.start_game_frame,
-            text="先手/後手:",
-            bg="#333333",
-            fg="#EEEEEE",
-            font=("Arial", 14, "bold"),
-        )
-        self.player_label.grid(row=0, column=0, padx=5, pady=5)
-
-        self.player_var = tk.BooleanVar(value=True)
-        self.player_first_radio = tk.Radiobutton(
-            self.start_game_frame,
-            text="先手",
-            variable=self.player_var,
-            value=True,
-            bg="#333333",
-            fg="#EEEEEE",
-            selectcolor="#555555",
-            font=("Arial", 12, "bold"),
-        )
-        self.player_first_radio.grid(row=0, column=1, padx=5, pady=5)
-        self.player_second_radio = tk.Radiobutton(
-            self.start_game_frame,
-            text="後手",
-            variable=self.player_var,
-            value=False,
-            bg="#333333",
-            fg="#EEEEEE",
-            selectcolor="#555555",
-            font=("Arial", 12, "bold"),
-        )
-        self.player_second_radio.grid(row=0, column=2, padx=5, pady=5)
-
-        self.agent_label = tk.Label(
-            self.start_game_frame,
-            text="エージェント:",
-            bg="#333333",
-            fg="#EEEEEE",
-            font=("Arial", 14, "bold"),
-        )
-        self.agent_label.grid(row=1, column=0, padx=5, pady=5)
-
-        self.agent_var = tk.StringVar(value="ランダム")
-        self.random_agent_radio = tk.Radiobutton(
-            self.start_game_frame,
-            text="ランダム",
-            variable=self.agent_var,
-            value="ランダム",
-            bg="#333333",
-            fg="#EEEEEE",
-            selectcolor="#555555",
-            font=("Arial", 12, "bold"),
-        )
-        self.random_agent_radio.grid(row=1, column=1, padx=5, pady=5)
-        self.minimax_agent_radio = tk.Radiobutton(
-            self.start_game_frame,
-            text="Minimax",
-            variable=self.agent_var,
-            value="Minimax",
-            bg="#333333",
-            fg="#EEEEEE",
-            selectcolor="#555555",
-            font=("Arial", 12, "bold"),
-        )
-        self.minimax_agent_radio.grid(row=1, column=2, padx=5, pady=5)
-
-        self.start_button = tk.Button(
-            self.start_game_frame,
-            text="ゲーム開始",
-            command=self.start_game,
-            bg="#444444",
-            fg="black",
-            font=("Arial", 14, "bold"),
-        )
-        self.start_button.grid(row=2, column=0, columnspan=3, pady=10)
-
-    def create_board_lines(self):
-        """Draws the lines of the board."""
-        for i in range(1, 3):
-            self.canvas.create_line(
-                i * 100, 0, i * 100, 300, fill="white", width=3
-            )
-            self.canvas.create_line(
-                0, i * 100, 300, i * 100, fill="white", width=3
-            )
+        self.settings_ui.build_settings_ui()
 
     def start_game(self):
         """Starts the game."""
-        self.selected_player = self.player_var.get()
-        self.selected_agent = self.agent_var.get()
+        self.selected_player = self.settings_ui.player_var.get()
+        self.selected_agent = self.settings_ui.agent_var.get()
         self.game = TicTacToe(self.selected_player, self.selected_agent)
-        self.start_game_frame.destroy()
-        self.draw_board()
+        self.settings_ui.start_game_frame.destroy()
+        self.board_drawer.draw_board()
         # If the human is second, the agent goes first
         if not self.selected_player:
             self.agent_turn()
         self.canvas.bind("<Button-1>", self.on_canvas_click)
-        self.game_info_frame.pack(pady=10)
-        self.update_game_info()
-
-    def update_game_info(self):
-        """Updates the game information labels."""
-        player_text = "先手" if self.selected_player else "後手"
-        agent_text = self.selected_agent
-        self.player_info_label.config(text=f"プレイヤー: {player_text}")
-        self.agent_info_label.config(text=f"エージェント: {agent_text}")
+        self.game_info_ui.show_game_info()
 
     def on_canvas_click(self, event):
         """Handles the canvas click event."""
@@ -200,34 +89,11 @@ class TicTacToeGUI:
             row = event.y // 100
             self.cell_clicked(row, col)
 
-    def draw_board(self):
-        """Draws the current state of the board."""
-        self.canvas.delete("all")
-        self.canvas.delete("winner_cell")  # Remove previous highlights
-        self.create_board_lines()
-        for i in range(3):
-            for j in range(3):
-                x1, y1 = j * 100 + 10, i * 100 + 10
-                x2, y2 = (j + 1) * 100 - 10, (i + 1) * 100 - 10
-                if self.game.board[i][j] == "X":
-                    self.draw_x(x1, y1, x2, y2)
-                elif self.game.board[i][j] == "O":
-                    self.draw_o(x1, y1, x2, y2)
-
-    def draw_x(self, x1, y1, x2, y2):
-        """Draws an 'X' on the canvas."""
-        self.canvas.create_line(x1, y1, x2, y2, fill="red", width=5)
-        self.canvas.create_line(x1, y2, x2, y1, fill="red", width=5)
-
-    def draw_o(self, x1, y1, x2, y2):
-        """Draws an 'O' on the canvas."""
-        self.canvas.create_oval(x1, y1, x2, y2, outline="blue", width=5)
-
     def cell_clicked(self, row, col):
         """Handles a cell click event."""
         if self.game.current_player == self.game.human_player:
             if self.game.make_move(row, col):
-                self.draw_board()
+                self.board_drawer.draw_board()
                 winner = self.game.check_winner()
                 if winner:
                     self.game_over(winner)
@@ -239,7 +105,7 @@ class TicTacToeGUI:
         """Handles the agent's turn."""
         if self.game.current_player == self.game.agent_player:
             if self.game.agent_move():
-                self.draw_board()
+                self.board_drawer.draw_board()
                 winner = self.game.check_winner()
                 if winner:
                     self.game_over(winner)
@@ -250,7 +116,7 @@ class TicTacToeGUI:
         """Handles the game over state."""
         self.canvas.unbind("<Button-1>")
         if self.game.winner_line:
-            self.highlight_winner_cells(self.game.winner_line)
+            self.board_drawer.highlight_winner_cells(self.game.winner_line)
         if winner == "draw":
             self.result_label.config(text="引き分けです！")
         else:
@@ -260,29 +126,15 @@ class TicTacToeGUI:
         self.master.update_idletasks()
         self.master.update()
 
-    def highlight_winner_cells(self, winner_line):
-        """Highlights the winning cells."""
-        for row, col in winner_line:
-            x1, y1 = col * 100, row * 100
-            x2, y2 = (col + 1) * 100, (row + 1) * 100
-            self.canvas.create_rectangle(
-                x1, y1, x2, y2, fill="yellow", tags="winner_cell"
-            )
-            # Redraw "X" or "O" on top of the cell
-            if self.game.board[row][col] == "X":
-                self.draw_x(x1 + 10, y1 + 10, x2 - 10, y2 - 10)
-            elif self.game.board[row][col] == "O":
-                self.draw_o(x1 + 10, y1 + 10, x2 - 10, y2 - 10)
-
     def restart_game_same_settings(self):
         """Restarts the game with the same settings."""
         self.result_label.pack_forget()
         self.restart_buttons_frame.pack_forget()
-        self.canvas.delete("winner_cell")  # Remove previous highlights
+        self.board_drawer.remove_winner_highlight()
         self.game = TicTacToe(self.selected_player, self.selected_agent)
-        self.draw_board()
+        self.board_drawer.draw_board()
         self.canvas.bind("<Button-1>", self.on_canvas_click)
-        self.update_game_info()
+        self.game_info_ui.update_game_info()
         if not self.selected_player:
             self.agent_turn()
 
@@ -292,6 +144,6 @@ class TicTacToeGUI:
         self.restart_buttons_frame.pack_forget()
         self.canvas.unbind("<Button-1>")
         self.canvas.delete("all")
-        self.canvas.delete("winner_cell")  # Remove previous highlights
-        self.create_board_lines()
-        self.build_settings_ui()
+        self.board_drawer.remove_winner_highlight()
+        self.board_drawer.create_board_lines()
+        self.settings_ui.build_settings_ui()
