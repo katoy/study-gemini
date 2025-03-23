@@ -31,12 +31,12 @@ class DatabaseAgent(BaseAgent):
         データベースからベストの打ち手を取得する
         """
         board_str = self.board_to_string(board)
-        logging.info(f"get_move: Original board: {board_str}")
+        # logging.info(f"get_move: Original board: {board_str}")  # この行を削除
         if board_str in self.database:
             best_move_index = self.database[board_str]["best_move"]
-            logging.info(f"get_move: best_move_index: {best_move_index}")
+            # logging.info(f"get_move: best_move_index: {best_move_index}")  # この行を削除
             if best_move_index == -1:
-                logging.info("get_move: best_move_index is -1, returning None")
+                # logging.info("get_move: best_move_index is -1, returning None")  # この行を削除
                 return None
 
             return self.index_to_move(best_move_index)
@@ -48,7 +48,7 @@ class DatabaseAgent(BaseAgent):
         """
         盤面を文字列に変換する
         """
-        return "".join(cell for row in board for cell in row) # 修正
+        return "".join(cell if cell != " " else " " for row in board for cell in row)
 
     def index_to_move(self, index: int) -> tuple[int, int]:
         """
