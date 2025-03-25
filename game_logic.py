@@ -2,7 +2,7 @@
 from agents.random_agent import RandomAgent
 from agents.minimax_agent import MinimaxAgent
 from agents.database_agent import DatabaseAgent  # 追加
-
+from agents.q_learning_agent import QLearningAgent  # 追加
 
 class TicTacToe:
     """
@@ -33,24 +33,14 @@ class TicTacToe:
         self.game_over = False
 
     def _create_agent(self, agent_type: str):
-        """
-        Creates an agent based on the specified type.
-
-        Args:
-            agent_type (str): The type of agent to create.
-
-        Returns:
-            Agent: An instance of the specified agent type.
-
-        Raises:
-            ValueError: If an invalid agent type is provided.
-        """
         if agent_type == "ランダム":
             return RandomAgent(self.agent_player)
         elif agent_type == "Minimax":
             return MinimaxAgent(self.agent_player)
-        elif agent_type == "Database":  # 追加
-            return DatabaseAgent(self.agent_player)  # 追加
+        elif agent_type == "Database":
+            return DatabaseAgent(self.agent_player)
+        elif agent_type == "QLearning":  # 追加
+            return QLearningAgent(self.agent_player, q_table_file="q_table.json")  # q_table_fileを追加
         else:
             raise ValueError("Invalid agent type provided")
 

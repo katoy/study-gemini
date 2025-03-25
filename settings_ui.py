@@ -97,6 +97,18 @@ class SettingsUI:
             font=("Arial", 12, "bold"),  # 追加
         )  # 追加
         self.database_agent_radio.pack(pady=5)  # 追加
+        self.qlearning_agent_radio = tk.Radiobutton(  # 追加
+            self.settings_frame,  # 追加
+            text="QLearning",  # 追加
+            variable=self.agent_var,  # 追加
+            value="QLearning",  # 追加
+            bg="#333333",  # 追加
+            fg="#EEEEEE",  # 追加
+            selectcolor="#555555",  # 追加
+            font=("Arial", 12, "bold"),  # 追加
+        )  # 追加
+        self.qlearning_agent_radio.pack(pady=5)  # 追加
+
 
         self.buttons_frame = tk.Frame(self.settings_frame, bg="#333333")
         self.buttons_frame.pack(pady=10)

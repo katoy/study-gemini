@@ -40,7 +40,7 @@ class TicTacToeGUI:
 
         # Settings to be saved (used on restart)
         self.selected_player = None  # True: Human select, False: Machine select
-        self.selected_agent = None  # "ランダム" or "Minimax"
+        self.selected_agent = None  # "ランダム" or "Minimax" or "Database" or "QLearning"
 
         self.settings_ui = SettingsUI(self, master)
         self.board_drawer = BoardDrawer(self, self.canvas)
@@ -72,6 +72,63 @@ class TicTacToeGUI:
         self.canvas.bind("<Button-1>", self.on_canvas_click)
         self.control_buttons_frame = tk.Frame(self.master, bg="#333333")
         self.control_buttons_frame.pack(pady=10)
+
+    def train_q_learning_agent(self):
+        """強化学習エージェントを学習させる"""
+        num_episodes = 10000  # 学習回数
+        for episode in range(num_episodes):
+            self.game = TicTacToe(False, "QLearning")  # 学習時はエージェント同士の対戦
+            while not self.game.game_over:
+                self.agent_turn_for_training()
+            self.update_q_table_after_game()
+            print(f"学習中: {episode+1}/{num_episodes}")
+        # 学習完了後、人間の操作を受け付ける
+        self.canvas.bind("<Button-1>", self.on_canvas_click)
+        self.control_buttons_frame = tk.Frame(self.master, bg="#333333")
+        self.control_buttons_frame.pack(pady=10)
+
+    def agent_turn_for_training(self):
+        """学習用のエージェントのターン"""
+        if self.game.current_player == self.game.agent_player:
+            current_state = self.game.agent.board_to_string(self.game.board)
+            move = self.game.agent.get_move(self.game.board)
+            if move is not None:
+                row, col = move
+                action = row * 3 + col
+                self.game.make_move(row, col)
+                self.game.switch_player()
+                next_state = self.game.agent.board_to_string(self.game.board)
+                winner = self.game.check_winner()
+                if winner == self.game.agent_player:
+                    reward = 100
+                elif winner == self.game.human_player:
+                    reward = -100
+                elif winner == "draw":
+                    reward = 0
+                else:
+                    reward = 0
+                self.game.agent.update_q_table(current_state, action, reward, next_state)
+
+    def update_q_table_after_game(self):
+        """ゲーム終了後にQテーブルを更新する"""
+        winner = self.game.check_winner()
+        if winner == self.game.agent_player:
+            reward = 100
+        elif winner == self.game.human_player:
+            reward = -100
+        elif winner == "draw":
+            reward = 0
+        else:
+            reward = 0
+
+        # 最後の状態と行動に対する報酬を更新
+        current_state = self.game.agent.board_to_string(self.game.board)
+        if self.game.agent.get_available_moves(self.game.board):
+            move = self.game.agent.get_move(self.game.board)
+            if move is not None:
+                row, col = move
+                action = row * 3 + col
+                self.game.agent.update_q_table(current_state, action, reward, current_state)
 
     def agent_first_move(self):
         """Handles the agent's first move."""
