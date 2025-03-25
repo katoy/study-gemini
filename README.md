@@ -105,6 +105,12 @@ python3 -m unittest discover
 python3 tests/test_minimax_agent.py
 ```
 
+## テストカバレッジ(任意)
+
+```
+python3 -m coverage run -m unittest discover -s tests
+python3 -m coverage report
+```
 ---
 
 ## 使用ライブラリ
