@@ -101,7 +101,7 @@ class TicTacToeGUI:
                 winner = self.game.check_winner()
                 if winner == self.game.agent_player:
                     reward = 100
-                elif winner == self.game.human_player:
+                elif winner == self.game.get_opponent(self.game.agent_player):
                     reward = -100
                 elif winner == "draw":
                     reward = 0
@@ -114,7 +114,7 @@ class TicTacToeGUI:
         winner = self.game.check_winner()
         if winner == self.game.agent_player:
             reward = 100
-        elif winner == self.game.human_player:
+        elif winner == self.game.get_opponent(self.game.agent_player):
             reward = -100
         elif winner == "draw":
             reward = 0
