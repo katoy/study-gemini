@@ -5,7 +5,7 @@ import os
 from agents.base_agent import BaseAgent
 
 class QLearningAgent(BaseAgent):
-    def __init__(self, player: str, learning_rate=0.8, discount_factor=0.9, exploration_rate=0.2, exploration_decay_rate=0.00001, q_table_file="q_table.json"):
+    def __init__(self, player: str, learning_rate=0.8, discount_factor=0.9, exploration_rate=0.2, exploration_decay_rate=0.001, q_table_file="q_table.json"):
         super().__init__(player)
         self.learning_rate = learning_rate
         self.discount_factor = discount_factor
