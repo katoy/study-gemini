@@ -1,5 +1,5 @@
 import tkinter as tk
-
+from tkinter import ttk  # コンボボックスを使用するために追加
 
 class SettingsUI:
     """
@@ -9,13 +9,12 @@ class SettingsUI:
     def __init__(self, gui, master):
         self.gui = gui
         self.master = master
-        self.settings_frame = None  # 初期化をNoneに変更
+        self.settings_frame = None
         self.player_var = tk.BooleanVar(value=True)
         self.agent_var = tk.StringVar(value="ランダム")
 
     def build_settings_ui(self):
         """Builds the settings UI (first/second, agent selection)."""
-        # settings_frame が存在する場合は、子ウィジェットをすべて削除
         if self.settings_frame:
             for widget in self.settings_frame.winfo_children():
                 widget.destroy()
@@ -23,18 +22,20 @@ class SettingsUI:
             self.settings_frame = tk.Frame(self.master, bg="#333333")
             self.settings_frame.pack()
 
-        self.player_label = tk.Label(
+        # プレイヤーの順番設定フレーム
+        self.player_frame = tk.LabelFrame(
             self.settings_frame,
-            text="先手:",
+            text="プレイヤーの順番",
             bg="#333333",
             fg="#EEEEEE",
             font=("Arial", 14, "bold"),
+            labelanchor="n",
         )
-        self.player_label.pack(pady=5)
+        self.player_frame.pack(pady=10)
 
         self.player_first_radio = tk.Radiobutton(
-            self.settings_frame,
-            text="あなた",
+            self.player_frame,
+            text="あなた（先手）",
             variable=self.player_var,
             value=True,
             bg="#333333",
@@ -42,10 +43,10 @@ class SettingsUI:
             selectcolor="#555555",
             font=("Arial", 12, "bold"),
         )
-        self.player_first_radio.pack(pady=5)
+        self.player_first_radio.pack(side="left", padx=10)
         self.player_second_radio = tk.Radiobutton(
-            self.settings_frame,
-            text="マシン",
+            self.player_frame,
+            text="マシン（先手）",
             variable=self.player_var,
             value=False,
             bg="#333333",
@@ -53,95 +54,66 @@ class SettingsUI:
             selectcolor="#555555",
             font=("Arial", 12, "bold"),
         )
-        self.player_second_radio.pack(pady=5)
+        self.player_second_radio.pack(side="left", padx=10)
 
-        self.agent_label = tk.Label(
+        # エージェント選択フレーム
+        self.agent_frame = tk.LabelFrame(
             self.settings_frame,
-            text="エージェント:",
+            text="対戦エージェント",
             bg="#333333",
             fg="#EEEEEE",
             font=("Arial", 14, "bold"),
+            labelanchor="n",
         )
-        self.agent_label.pack(pady=5)
-        self.random_agent_radio = tk.Radiobutton(
-            self.settings_frame,
-            text="ランダム",
-            variable=self.agent_var,
-            value="ランダム",
-            bg="#333333",
-            fg="#EEEEEE",
-            selectcolor="#555555",
-            font=("Arial", 12, "bold"),
-        )
-        self.random_agent_radio.pack(pady=5)
-        self.minimax_agent_radio = tk.Radiobutton(
-            self.settings_frame,
-            text="Minimax",
-            variable=self.agent_var,
-            value="Minimax",
-            bg="#333333",
-            fg="#EEEEEE",
-            selectcolor="#555555",
-            font=("Arial", 12, "bold"),
-        )
-        self.minimax_agent_radio.pack(pady=5)
-        self.database_agent_radio = tk.Radiobutton(
-            self.settings_frame,
-            text="Database",
-            variable=self.agent_var,
-            value="Database",
-            bg="#333333",
-            fg="#EEEEEE",
-            selectcolor="#555555",
-            font=("Arial", 12, "bold"),
-        )
-        self.database_agent_radio.pack(pady=5)
-        self.perfect_agent_radio = tk.Radiobutton(
-            self.settings_frame,
-            text="Perfect",
-            variable=self.agent_var,
-            value="Perfect",
-            bg="#333333",
-            fg="#EEEEEE",
-            selectcolor="#555555",
-            font=("Arial", 12, "bold"),
-        )
-        self.perfect_agent_radio.pack(pady=5)
-        self.qlearning_agent_radio = tk.Radiobutton(
-            self.settings_frame,
-            text="QLearning",
-            variable=self.agent_var,
-            value="QLearning",
-            bg="#333333",
-            fg="#EEEEEE",
-            selectcolor="#555555",
-            font=("Arial", 12, "bold"),
-        )
-        self.qlearning_agent_radio.pack(pady=5)
+        self.agent_frame.pack(pady=10)
 
+        # コンボボックスの作成
+        self.agent_options = [
+            "ランダム",
+            "Minimax",
+            "Database",
+            "Perfect",
+            "QLearning",
+        ]
+        self.agent_combo = ttk.Combobox(
+            self.agent_frame,
+            textvariable=self.agent_var,
+            values=self.agent_options,
+            state="readonly",
+            font=("Arial", 12),
+        )
+        self.agent_combo.pack(pady=5)
+        self.agent_combo.current(0)  # デフォルトで最初の項目を選択
 
+        # ボタンフレーム
         self.buttons_frame = tk.Frame(self.settings_frame, bg="#333333")
-        self.buttons_frame.pack(pady=10)
+        self.buttons_frame.pack(pady=20)
 
+        # ゲーム開始ボタン
         self.start_button = tk.Button(
             self.buttons_frame,
             text="ゲーム開始",
             command=self.start_game,
-            bg="#444444",
-            fg="black",
-            font=("Arial", 14, "bold"),
+            bg="#808080",  # グレーに変更
+            fg="black",  # 黒に変更
+            font=("Arial", 16, "bold"),
+            width=15,
+            height=2,
         )
-        self.start_button.pack(side=tk.LEFT, padx=5)
+        self.start_button.pack(side="left", padx=20)
 
+        # ゲーム中断ボタン
         self.stop_button = tk.Button(
             self.buttons_frame,
             text="ゲーム中断",
             command=self.gui.stop_game,
-            bg="#444444",
-            fg="black",
-            font=("Arial", 14, "bold"),
+            bg="#808080",  # グレーに変更
+            fg="black",  # 黒に変更
+            font=("Arial", 12),
+            width=10,
+            height=1,
         )
-        self.stop_button.pack(side=tk.LEFT, padx=5)
+        self.stop_button.pack(side="left", padx=20)
 
     def start_game(self):
         self.gui.start_game()
