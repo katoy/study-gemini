@@ -1,8 +1,9 @@
 # game_logic.py
 from agents.random_agent import RandomAgent
 from agents.minimax_agent import MinimaxAgent
-from agents.database_agent import DatabaseAgent  # 追加
-from agents.q_learning_agent import QLearningAgent  # 追加
+from agents.database_agent import DatabaseAgent
+from agents.perfect_agent import PerfectAgent
+from agents.q_learning_agent import QLearningAgent
 
 class TicTacToe:
     """
@@ -39,8 +40,10 @@ class TicTacToe:
             return MinimaxAgent(self.agent_player)
         elif agent_type == "Database":
             return DatabaseAgent(self.agent_player)
-        elif agent_type == "QLearning":  # 追加
+        elif agent_type == "QLearning":
             return QLearningAgent(self.agent_player, q_table_file="q_table.json")  # q_table_fileを追加
+        elif agent_type == "Perfect":
+            return PerfectAgent(self.agent_player)
         else:
             raise ValueError("Invalid agent type provided")
 

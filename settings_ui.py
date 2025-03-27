@@ -63,7 +63,6 @@ class SettingsUI:
             font=("Arial", 14, "bold"),
         )
         self.agent_label.pack(pady=5)
-
         self.random_agent_radio = tk.Radiobutton(
             self.settings_frame,
             text="ランダム",
@@ -86,28 +85,39 @@ class SettingsUI:
             font=("Arial", 12, "bold"),
         )
         self.minimax_agent_radio.pack(pady=5)
-        self.database_agent_radio = tk.Radiobutton(  # 追加
-            self.settings_frame,  # 追加
-            text="Database",  # 追加
-            variable=self.agent_var,  # 追加
-            value="Database",  # 追加
-            bg="#333333",  # 追加
-            fg="#EEEEEE",  # 追加
-            selectcolor="#555555",  # 追加
-            font=("Arial", 12, "bold"),  # 追加
-        )  # 追加
-        self.database_agent_radio.pack(pady=5)  # 追加
-        self.qlearning_agent_radio = tk.Radiobutton(  # 追加
-            self.settings_frame,  # 追加
-            text="QLearning",  # 追加
-            variable=self.agent_var,  # 追加
-            value="QLearning",  # 追加
-            bg="#333333",  # 追加
-            fg="#EEEEEE",  # 追加
-            selectcolor="#555555",  # 追加
-            font=("Arial", 12, "bold"),  # 追加
-        )  # 追加
-        self.qlearning_agent_radio.pack(pady=5)  # 追加
+        self.database_agent_radio = tk.Radiobutton(
+            self.settings_frame,
+            text="Database",
+            variable=self.agent_var,
+            value="Database",
+            bg="#333333",
+            fg="#EEEEEE",
+            selectcolor="#555555",
+            font=("Arial", 12, "bold"),
+        )
+        self.database_agent_radio.pack(pady=5)
+        self.perfect_agent_radio = tk.Radiobutton(
+            self.settings_frame,
+            text="Perfect",
+            variable=self.agent_var,
+            value="Perfect",
+            bg="#333333",
+            fg="#EEEEEE",
+            selectcolor="#555555",
+            font=("Arial", 12, "bold"),
+        )
+        self.perfect_agent_radio.pack(pady=5)
+        self.qlearning_agent_radio = tk.Radiobutton(
+            self.settings_frame,
+            text="QLearning",
+            variable=self.agent_var,
+            value="QLearning",
+            bg="#333333",
+            fg="#EEEEEE",
+            selectcolor="#555555",
+            font=("Arial", 12, "bold"),
+        )
+        self.qlearning_agent_radio.pack(pady=5)
 
 
         self.buttons_frame = tk.Frame(self.settings_frame, bg="#333333")

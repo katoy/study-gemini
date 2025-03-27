@@ -17,7 +17,7 @@ class BaseAgent:
         """
         self.player = player
 
-    def get_move(self, board: list) -> tuple[int, int] | None:
+    def get_move(self, board: list) -> tuple[int, int]:
         """
         Gets the agent's move.
 
@@ -25,7 +25,6 @@ class BaseAgent:
             board (list): The current game board.
 
         Returns:
-            tuple[int, int] | None: The (row, col) of the move, or None if
-                no move is possible.
+            tuple[int, int]: The (row, col) of the move.
         """
         raise NotImplementedError("Subclasses must implement this method")

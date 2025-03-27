@@ -1,5 +1,6 @@
 import sqlite3
 import logging
+import json
 
 # ロギング設定
 logging.basicConfig(level=logging.INFO)
@@ -62,7 +63,7 @@ def insert_to_db(cursor, board_str, best_move, result):
         VALUES (?, ?, ?)
     ''', (board_str, best_move, result))
 
-def create_database(board: list, player: str, cursor, seen: set):
+def create_database(board: list, player: str, cursor, seen: set, perfect_moves: dict):
     board_str = board_to_string(board)
     if board_str in seen:
         return
@@ -72,10 +73,12 @@ def create_database(board: list, player: str, cursor, seen: set):
     if winner:
         insert_to_db(cursor, board_str, -1, winner)
         logging.info(f"勝敗あり: {board_str} → {winner}")
+        perfect_moves[board_str] = -1
         return
     if is_board_full(board):
         insert_to_db(cursor, board_str, -1, "draw")
         logging.info(f"引き分け: {board_str}")
+        perfect_moves[board_str] = -1
         return
 
     best_score = float("-inf")
@@ -92,12 +95,13 @@ def create_database(board: list, player: str, cursor, seen: set):
 
     insert_to_db(cursor, board_str, best_move, "continue")
     logging.info(f"登録: {board_str} → best_move: {best_move}")
+    perfect_moves[board_str] = best_move
 
     for i in range(9):
         row, col = i // 3, i % 3
         if board[row][col] == " ":
             board[row][col] = player
-            create_database(board, get_opponent(player), cursor, seen)
+            create_database(board, get_opponent(player), cursor, seen, perfect_moves)
             board[row][col] = " "
 
 def main():
@@ -115,11 +119,17 @@ def main():
 
     empty_board = [[" " for _ in range(3)] for _ in range(3)]
     seen = set()
-    create_database(empty_board, "X", cursor, seen)
+    perfect_moves = {}
+    create_database(empty_board, "X", cursor, seen, perfect_moves)
 
     conn.commit()
     conn.close()
     print("✅ データベースファイル tictactoe.db を生成しました。")
+
+    # perfect_moves を JSON ファイルに保存
+    with open("perfect_moves.json", "w") as f:
+        json.dump(perfect_moves, f)
+    print("✅ perfect_moves.json を生成しました。")
 
 if __name__ == "__main__":
     main()
