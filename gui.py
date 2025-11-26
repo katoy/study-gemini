@@ -6,6 +6,12 @@ from settings_ui import SettingsUI
 from board_drawer import BoardDrawer
 from game_info_ui import GameInfoUI
 
+from agents.random_agent import RandomAgent
+from agents.minimax_agent import MinimaxAgent
+from agents.database_agent import DatabaseAgent
+from agents.perfect_agent import PerfectAgent
+from agents.q_learning_agent import QLearningAgent
+
 
 class TicTacToeGUI:
     """
@@ -57,7 +63,21 @@ class TicTacToeGUI:
             self.control_buttons_frame.destroy()
         self.selected_player = self.settings_ui.player_var.get()
         self.selected_agent = self.settings_ui.agent_var.get()
-        self.game = TicTacToe(self.selected_player, self.selected_agent)
+
+        agent_x_instance = None
+        agent_o_instance = None
+        human_player_symbol = None
+
+        # self.selected_player が True なら人間が X (agent_o が AI)
+        # self.selected_player が False なら人間が O (agent_x が AI)
+        if self.selected_player:  # True: Human plays X, AI plays O
+            human_player_symbol = "X"
+            agent_o_instance = self._create_agent_instance(self.selected_agent, "O")
+        else:  # False: Human plays O, AI plays X
+            human_player_symbol = "O"
+            agent_x_instance = self._create_agent_instance(self.selected_agent, "X")
+
+        self.game = TicTacToe(agent_x=agent_x_instance, agent_o=agent_o_instance, human_player=human_player_symbol)
         self.board_drawer.draw_board()
         self.game_info_ui.show_game_info()
         self.board_drawer.remove_winner_highlight()
@@ -133,9 +153,12 @@ class TicTacToeGUI:
     def agent_first_move(self):
         """Handles the agent's first move."""
         if self.game.current_player == self.game.agent_player:
-            self.game.agent_move()
-            self.board_drawer.draw_board()
-            self.game.switch_player()
+            current_agent_instance = self.game.get_current_agent()
+            if current_agent_instance:
+                row, col = current_agent_instance.get_move(self.game.board)
+                if self.game.make_move(row, col):
+                    self.board_drawer.draw_board()
+                    self.game.switch_player()
 
     def on_canvas_click(self, event):
         """Handles the canvas click event."""
@@ -162,13 +185,17 @@ class TicTacToeGUI:
     def agent_turn(self):
         """Handles the agent's turn."""
         if self.game.current_player == self.game.agent_player:
-            if self.game.agent_move():
-                self.board_drawer.draw_board()
-                winner = self.game.check_winner()
-                if winner:
-                    self.game_over(winner)
-                    return
-                self.game.switch_player()
+            current_agent_instance = self.game.get_current_agent()
+            if current_agent_instance:
+                # エージェントに現在のゲームボードの状態を渡して次の手を取得
+                row, col = current_agent_instance.get_move(self.game.board)
+                if self.game.make_move(row, col):
+                    self.board_drawer.draw_board()
+                    winner = self.game.check_winner()
+                    if winner:
+                        self.game_over(winner)
+                        return
+                    self.game.switch_player()
 
     def game_over(self, winner):
         """Handles the game over state."""
@@ -197,3 +224,19 @@ class TicTacToeGUI:
             self.settings_ui.settings_frame.pack()
         self.settings_ui.build_settings_ui()
         self.settings_ui.load_settings(self.saved_settings)
+
+    def _create_agent_instance(self, agent_name, player_symbol):
+        """
+        Create an agent instance based on the agent name and player symbol.
+        """
+        if agent_name == "ランダム":
+            return RandomAgent(player_symbol)
+        elif agent_name == "Minimax":
+            return MinimaxAgent(player_symbol)
+        elif agent_name == "Database":
+            return DatabaseAgent(player_symbol)
+        elif agent_name == "Perfect":
+            return PerfectAgent(player_symbol)
+        elif agent_name == "QLearning":
+            return QLearningAgent(player_symbol)
+        return None

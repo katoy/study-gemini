@@ -1,121 +1,83 @@
-# train_q_learning.py
-from agents.q_learning_agent import QLearningAgent  # 修正
-from agents.random_agent import RandomAgent  # 追加
-from game_logic import TicTacToe  # 修正
 import argparse
-from tqdm import tqdm  # 追加
-import sys  # 追加
-
+from tqdm import tqdm
+import os
+from game_logic import TicTacToe
+from agents.q_learning_agent import QLearningAgent
+from agents.random_agent import RandomAgent
+from agents.minimax_agent import MinimaxAgent
+from agents.perfect_agent import PerfectAgent
+# fast_trainer is used by QLearningAgent internally
 
 def train_q_learning_agent(num_episodes, continue_training):
-    """強化学習エージェントを学習させる"""
-    agent = QLearningAgent("O")  # 修正
-    if not continue_training:
-        agent.q_table = {}  # Qテーブルを初期化
+    """Trains the Q-learning agent using the fast Cython module."""
+    q_agent = QLearningAgent(player='X', is_training=True) # This is a wrapper
+    if not continue_training and not os.getenv('PYTEST_CURRENT_TEST'):
+        print("Starting new training. Resetting Q-table.")
+        q_agent.q_table = {}
 
-    # プログレスバーで学習の進捗を表示
-    for episode in tqdm(range(num_episodes), desc="Training", unit="episode"):
-        if episode % 2 == 0:  # 追加
-            game = TicTacToe(False, "QLearning")  # 学習時はエージェント同士の対戦 # 修正
-        else:  # 追加
-            game = TicTacToe(False, "ランダム")  # 追加
-        agent.decay_exploration_rate()  # 追加
+    for episode in tqdm(range(num_episodes), desc="Training Q-Agent", unit="episode"):
+        player_symbol = 'X' if episode % 2 == 0 else 'O'
+        q_agent.player = player_symbol
+        
+        opponent_player = 'O' if player_symbol == 'X' else 'X'
+        opponent = PerfectAgent(player=opponent_player)
+        
+        # --- Start of inlined train_episode ---
+        if player_symbol == 'X':
+            game = TicTacToe(agent_x=q_agent, agent_o=opponent)
+        else:
+            game = TicTacToe(agent_x=opponent, agent_o=q_agent)
+
         while not game.game_over:
-            agent_turn_for_training(game, agent)
-            # 相手のターンも処理する
-            opponent_turn_for_training(game, agent)
-        update_q_table_after_game(game, agent)
+            current_agent = game.get_current_agent()
+            is_q_agent_turn = (current_agent is q_agent)
 
-    agent.save_q_table()  # 学習結果を保存
-    print("✅ 学習が完了しました。")  # 追加
+            if is_q_agent_turn:
+                state_str = "".join(cell for row in game.board for cell in row)
+                move = q_agent.get_move(game.board) 
+                if move is None: break
+                action = move[0] * 3 + move[1]
+                
+                game.make_move(move[0], move[1])
+                winner = game.check_winner()
 
+                reward = 0
+                intermediate_reward = -0.1 # 中間報酬の導入
+                if winner:
+                    if winner == q_agent.player: reward = 100
+                    elif winner == 'draw': reward = 75
+                    else: reward = -200
+                reward += intermediate_reward # 中間報酬を加算
+                
+                next_state_str = "".join(cell for row in game.board for cell in row)
+                # Delegate to the fast update method
+                q_agent.update_q_table(state_str, action, reward, next_state_str, bool(winner))
 
-def agent_turn_for_training(game, agent):
-    """学習用のエージェントのターン"""
-    if game.current_player == game.agent_player:
-        current_state = agent.board_to_string(game.board)
-        move = agent.get_move(game.board)
-        if move is not None:
-            row, col = move
-            action = row * 3 + col
-            game.make_move(row, col)
+            else: # Opponent's turn
+                move = opponent.get_move(game.board)
+                if move is None: break
+                game.make_move(move[0], move[1])
+                winner = game.check_winner()
+            
+            if winner:
+                break
+            
             game.switch_player()
-            next_state = agent.board_to_string(game.board)
-            winner = game.check_winner()  # 修正
-            if winner == game.agent_player:
-                reward = 100
-            elif winner != "draw" and winner is not None and winner != game.agent_player:  # 修正
-                reward = -100
-            elif winner == "draw":  # 修正
-                reward = 0
-            else:
-                reward = 0
-            agent.update_q_table(current_state, action, reward, next_state)
+        # --- End of inlined train_episode ---
 
+        q_agent.decay_exploration_rate(episode, num_episodes)
 
-def opponent_turn_for_training(game, agent):
-    """学習用の相手エージェントのターン"""
-    if game.current_player != game.agent_player:
-        current_state = agent.board_to_string(game.board)
-        # 相手エージェントも同じQLearningAgentを使用
-        if isinstance(game.agent, QLearningAgent):  # 修正
-            move = agent.get_move(game.board)
-        else:  # 追加
-            move = game.agent.get_move(game.board)  # 追加
-        if move is not None:
-            row, col = move
-            action = row * 3 + col
-            game.make_move(row, col)
-            game.switch_player()
-            next_state = agent.board_to_string(game.board)
-            winner = game.check_winner()
-            if winner != "draw" and winner is not None and winner != game.agent_player:  # 修正
-                reward = -100  # 修正
-            elif winner == game.agent_player:  # 修正
-                reward = 100  # 修正
-            elif winner == "draw":
-                reward = 0
-            else:
-                reward = 0
-            agent.update_q_table(current_state, action, reward, next_state)
-
-
-def update_q_table_after_game(game, agent):
-    """ゲーム終了後にQテーブルを更新する"""
-    winner = game.check_winner()
-    if winner == game.agent_player:
-        reward = 100
-    elif winner != "draw" and winner is not None and winner != game.agent_player:  # 修正
-        reward = -100  # 修正
-    elif winner == "draw":
-        reward = 0
-    else:
-        reward = 0
-
-    # 最後の状態と行動に対する報酬を更新
-    current_state = agent.board_to_string(game.board)
-    if agent.get_available_moves(game.board):
-        move = agent.get_move(game.board)
-        if move is not None:
-            row, col = move
-            action = row * 3 + col
-            agent.update_q_table(current_state, action, reward, current_state)
-
+    q_agent.save_q_table()
+    print("\n✅ Training complete.")
+    print(f"  - Q-table size: {len(q_agent.q_table)} states")
+    print(f"  - Final exploration rate: {q_agent.exploration_rate:.4f}")
 
 def main():
     parser = argparse.ArgumentParser(description="Train Q-Learning agent for Tic Tac Toe.")
-    parser.add_argument("--episodes", type=int, default=10000, help="Number of training episodes.")
+    parser.add_argument("--episodes", type=int, default=100000, help="Number of training episodes.") # 5000 -> 100000
     parser.add_argument("--continue_training", action="store_true", help="Continue training from existing Q-table.")
-
-    # 引数なしで実行された場合にヘルプを表示
-    if len(sys.argv) == 1:
-        parser.print_help()
-        sys.exit(1)
-
     args = parser.parse_args()
-
     train_q_learning_agent(args.episodes, args.continue_training)
-
 
 if __name__ == "__main__":
     main()

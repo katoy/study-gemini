@@ -5,7 +5,7 @@ from game_logic import TicTacToe
 
 class TestTicTacToe(unittest.TestCase):
     def setUp(self):
-        self.game = TicTacToe(player_select=True, agent_type="ランダム")
+        self.game = TicTacToe(human_player="X")
 
     def test_initial_board_is_empty(self):
         """初期化時に盤面が全て空であることを確認する"""

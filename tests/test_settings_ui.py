@@ -28,3 +28,14 @@ class TestSettingsUI(unittest.TestCase):
         self.settings_ui.load_settings(saved_settings)
         self.assertFalse(self.settings_ui.player_var.get())
         self.assertEqual(self.settings_ui.agent_var.get(), "Minimax")
+
+    def test_build_settings_ui_twice(self):
+        """build_settings_uiを2回呼び出しても正常に動作するか"""
+        self.settings_ui.build_settings_ui()
+        self.assertIsNotNone(self.settings_ui.settings_frame)
+        # 2回目の呼び出し
+        self.settings_ui.build_settings_ui()
+        self.assertIsNotNone(self.settings_ui.settings_frame)
+
+if __name__ == "__main__":
+    unittest.main()

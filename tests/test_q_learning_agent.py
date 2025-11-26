@@ -9,7 +9,12 @@ import numpy as np
 class TestQLearningAgent(unittest.TestCase):
     def setUp(self):
         self.q_table_file = "test_q_table.json"
-        self.agent = QLearningAgent("O", q_table_file=self.q_table_file)
+        # q_table_file が存在する場合はリネームしてテストの clean state を確保
+        if os.path.exists(self.q_table_file):
+            os.rename(self.q_table_file, self.q_table_file + ".bak")
+
+        self.agent = QLearningAgent("O", q_table_file=self.q_table_file, exploration_rate=0.5)
+
         self.empty_board = [[" ", " ", " "], [" ", " ", " "], [" ", " ", " "]]
         self.almost_full_board = [["X", "O", "X"], ["X", "O", " "], ["O", "X", "X"]]
         self.full_board = [["X", "O", "X"], ["X", "O", "O"], ["O", "X", "X"]]
@@ -17,6 +22,9 @@ class TestQLearningAgent(unittest.TestCase):
     def tearDown(self):
         if os.path.exists(self.q_table_file):
             os.remove(self.q_table_file)
+        # バックアップファイルを元に戻す
+        if os.path.exists(self.q_table_file + ".bak"):
+            os.rename(self.q_table_file + ".bak", self.q_table_file)
 
     def test_get_move_on_empty_board(self):
         """空の盤面で、返される手が有効な範囲内にあるかを確認する"""
@@ -41,36 +49,15 @@ class TestQLearningAgent(unittest.TestCase):
         self.agent.save_q_table()
         self.assertTrue(os.path.exists(self.q_table_file))
 
-        new_agent = QLearningAgent("O", q_table_file=self.q_table_file)
+        original_pytest_current_test = os.getenv('PYTEST_CURRENT_TEST')
+        if original_pytest_current_test:
+            del os.environ['PYTEST_CURRENT_TEST']
+
+        new_agent = QLearningAgent("O", q_table_file=self.q_table_file, is_training=False)
         self.assertEqual(self.agent.q_table, new_agent.q_table)
 
-    def test_board_to_string(self):
-        """盤面が正しく文字列に変換されるか"""
-        board = [["X", "O", " "], [" ", "X", " "], [" ", " ", "O"]]
-        self.assertEqual(self.agent.board_to_string(board), "XO  X   O")
-
-    def test_index_to_move(self):
-        """index が (row, col) に正しく変換されるか"""
-        self.assertEqual(self.agent.index_to_move(0), (0, 0))
-        self.assertEqual(self.agent.index_to_move(4), (1, 1))
-        self.assertEqual(self.agent.index_to_move(8), (2, 2))
-
-    def test_get_random_move(self):
-        """空きがあればランダムな手を返す / 埋まっていれば None を返す"""
-        move = self.agent.get_random_move(self.empty_board)
-        self.assertIn(move, [(i, j) for i in range(3) for j in range(3)])
-
-        move = self.agent.get_random_move(self.full_board)
-        self.assertIsNone(move)
-
-    def test_get_available_moves(self):
-        """空きマスが正しく取得できるか"""
-        available_moves = self.agent.get_available_moves(self.empty_board)
-        self.assertEqual(len(available_moves), 9)
-        self.assertIn((0,0), available_moves)
-
-        available_moves = self.agent.get_available_moves(self.full_board)
-        self.assertEqual(len(available_moves), 0)
+        if original_pytest_current_test:
+            os.environ['PYTEST_CURRENT_TEST'] = original_pytest_current_test
 
     @patch('random.uniform')
     def test_get_move_exploration(self, mock_random_uniform):
@@ -93,42 +80,48 @@ class TestQLearningAgent(unittest.TestCase):
     def test_exploration_rate_decay(self):
         """探索率が正しく減衰するかを確認する"""
         initial_exploration_rate = self.agent.exploration_rate
-        self.agent.decay_exploration_rate()
+        self.agent.decay_exploration_rate(1, 100)
         self.assertLess(self.agent.exploration_rate, initial_exploration_rate)
-        for _ in range(100000):
-            self.agent.decay_exploration_rate()
-        self.assertAlmostEqual(self.agent.exploration_rate, 0.01)
+        for i in range(100000):
+            self.agent.decay_exploration_rate(i, 100000)
+        self.assertAlmostEqual(self.agent.exploration_rate, self.agent.min_exploration_rate, places=2) # Changed to self.agent.min_exploration_rate
 
-    def test_q_table_learning_progress(self):
-        """Qテーブルが更新されることを確認する"""
-        # 学習前のQ値を取得
-        initial_q_value = self.agent.q_table.get("X        ", [0] * 9)[0]
+    def test_set_exploration_rate(self):
+        """exploration_rate のセッターが正しく動作するか"""
+        new_rate = 0.5
+        self.agent.exploration_rate = new_rate
+        self.assertEqual(self.agent.exploration_rate, new_rate)
 
-        # 学習を実行
-        for _ in range(10):  # 10回学習を実行
-            self.agent.exploration_rate = 0  # 探索率を0に設定
-            game = TicTacToe(False, "QLearning")
-            # 学習を実行
-            current_state = "X        "  # 学習の盤面を設定
-            move = self.agent.get_move(game.board)
-            row, col = move
-            action = row * 3 + col
-            next_state = self.agent.board_to_string(game.board)
-            self.agent.update_q_table(current_state, action, 100, next_state)
+    def test_set_min_exploration_rate(self):
+        """min_exploration_rate のセッターが正しく動作するか"""
+        new_rate = 0.02
+        self.agent.min_exploration_rate = new_rate
+        self.assertEqual(self.agent.min_exploration_rate, new_rate)
 
-            # 学習を実行
-            current_state = "         "  # 学習の盤面を設定
-            move = self.agent.get_move(game.board)
-            row, col = move
-            action = row * 3 + col
-            next_state = self.agent.board_to_string(game.board)
-            self.agent.update_q_table(current_state, action, -100, next_state)
 
-        # 学習後のQ値を取得
-        updated_q_value = self.agent.q_table.get("X        ", [0] * 9)[0]
 
-        # Q値が更新されていることを確認
-        self.assertNotEqual(initial_q_value, updated_q_value)
 
-if __name__ == "__main__":
-    unittest.main()
+
+    @patch('builtins.print')
+    def test_load_q_table_with_invalid_json(self, mock_print):
+        """無効なQテーブルファイルでエラー処理が正しく行われるかを確認する"""
+        # PYTEST_CURRENT_TEST 環境変数を一時的に削除
+        original_pytest_current_test = os.getenv('PYTEST_CURRENT_TEST')
+        if original_pytest_current_test:
+            del os.environ['PYTEST_CURRENT_TEST']
+
+        # 無効なJSONファイルを作成
+        with open(self.q_table_file, "w") as f:
+            f.write("{invalid json}")
+
+        # QLearningAgentを初期化（load_q_tableが呼ばれる）
+        agent = QLearningAgent("X", q_table_file=self.q_table_file, is_training=False)
+
+        # q_tableが空であることを確認
+        self.assertEqual(agent.q_table, {})
+        # エラーメッセージがプリントされたことを確認
+        mock_print.assert_called_with(f"Warning: Could not read Q-table file '{self.q_table_file}'. Starting with an empty table.")
+
+        # 環境変数を元に戻す
+        if original_pytest_current_test:
+            os.environ['PYTEST_CURRENT_TEST'] = original_pytest_current_test

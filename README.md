@@ -1,167 +1,124 @@
-# 三目並べゲーム (Tic Tac Toe)
+# Tic-Tac-Toe AI Project
 
-このプロジェクトは、Python で作成された GUI ベースの三目並べゲームです。プレイヤーは先手または後手を選択でき、対戦相手には複数の思考エージェント（ランダム・Minimax・データベース・完全・Q学習）から選択できます。
+これは、様々なAIエージェントで三目並べ（Tic-Tac-Toe）をプレイするためのプロジェクトです。GUIを介して人間がAIと対戦したり、AI同士を対戦させたりすることができます。
 
-ゲームのアニメーション GIF
-![ゲームの例](images/game.gif)
----
+![game_gif](images/game.gif)
 
-## 特徴
+## 目次
 
-- GUIベースの直感的操作: Tkinter を使用したシンプルで使いやすいインターフェース。
-- 多彩な思考エージェント:
-  - ランダムエージェント: 空いているマスからランダムに手を選びます。
-  - Minimaxエージェント: 完全な Minimax アルゴリズムに基づき、最適な手を選びます（非常に強い！）。
-  - Databaseエージェント: 事前に Minimax で全局面を解析し、SQLite データベースに保存した手を参照します（超高速！）。
-  - Perfectエージェント: 全局面に対する最適な手を事前に計算し、JSONファイルに保存したデータから参照します（超高速 + 完全なMinimaxの強さ！）。
-  - QLearningエージェント: 強化学習（Q学習）を用いて学習するエージェント。学習回数を重ねるごとに強くなります。
-- 先手・後手の選択: プレイヤーは先手（X）または後手（O）を選択できます。
-- リスタート機能: ゲームを中断し、設定を保持したまま再開できます。
-- 黒板風の盤面デザイン: 視覚的にわかりやすい盤面デザイン。
-- 勝利ラインのハイライト: 勝敗が決まった際に、勝利ラインをハイライト表示します。
-- 充実したテストコード: 信頼性の高い実装を保証するテストコード。
-- Q学習エージェントの学習機能: Q学習エージェントを学習させることができます。
+- [Tic-Tac-Toe AI Project](#tic-tac-toe-ai-project)
+  - [目次](#目次)
+  - [主なファイルの説明](#主なファイルの説明)
+  - [実装されているエージェント](#実装されているエージェント)
+  - [使い方](#使い方)
+    - [1. GUIアプリケーションの実行](#1-guiアプリケーションの実行)
+    - [2. Q学習エージェントの管理 (CLI)](#2-q学習エージェントの管理-cli)
+  - [開発者向け情報](#開発者向け情報)
+    - [セットアップ](#セットアップ)
+    - [テストの実行](#テストの実行)
+    - [テストカバレッジの集計](#テストカバレッジの集計)
 
----
+## 主なファイルの説明
 
-## 実行方法
+*   `main.py`: アプリケーションのエントリーポイント。GUIを起動します。
+*   `gui.py`: メインのGUIウィンドウを構築します。
+*   `game_logic.py`: 三目並べのゲームロジック（勝利判定、手番管理など）を担います。
+*   `board_drawer.py`: ゲームボードの描画を担当します。
+*   `train_q_learning.py`: Q学習エージェントのモデル（`q_table.json`）を生成するための学習スクリプトです。
+*   `verify_q_learning_strength.py`: 学習済みQ学習エージェントの強さを他のAIと比較評価するスクリプトです。
+*   `evaluate_models.py`: 2つのQ学習モデル同士を対戦させて優劣を評価するスクリプトです。
+*   `create_database.py`: `perfect_agent`が使用する必勝手データベース（`tictactoe.db`）を作成します。
 
-1. Python のインストール
-   - Python 3.10 以上を推奨します。
+## 実装されているエージェント
 
-2. データベースと完全エージェント用データの作成（初回のみ）
+`agents/` ディレクトリには、異なるアルゴリズムで動作するAIエージェントが含まれています。
 
-   コマンド: python3 create_database.py
+*   `random_agent.py`: ランダムに手を選択する最も基本的なエージェント。
+*   `minimax_agent.py`: ミニマックス法を用いて最適な手を探索するエージェント。
+*   `q_learning_agent.py`: Q学習によって学習したQテーブルを元に行動を決定するエージェント。
+*   `perfect_agent.py`: `perfect_moves.json` または `tictactoe.db` にある必勝手のデータを元に行動するエージェント。
+*   `database_agent.py`: データベースに接続して手を決定するエージェントの基盤。
 
-   このコマンドにより、以下のファイルが生成されます。
-   - tictactoe.db: 全局面に対する最善手を含む SQLite データベース。
-   - perfect_moves.json: 完全エージェントが使用する、すべての局面に対する最善手の JSON データ。
+## 使い方
 
-3. Q学習エージェントの学習（任意）
+### 1. GUIアプリケーションの実行
 
-   コマンド: python3 train_q_learning.py --episodes 10000
+以下のコマンドで三目並べのGUIアプリケーションを起動できます。
 
-   このコマンドにより、q_table.json が生成されます。
-   - --episodes: 学習回数を指定します（デフォルトは 10000）。
-   - --continue_training: 学習済みの q_table.json から学習を再開する場合に指定します。
+```bash
+python main.py
+```
 
-   例：学習回数を 5000 回に設定し、学習を再開する場合
+### 2. Q学習エージェントの管理 (CLI)
 
-   コマンド: python3 train_q_learning.py --episodes 5000 --continue_training
+#### Q学習エージェントの学習
 
-4. ゲームの起動
+`train_q_learning.py` を使ってQ学習エージェントを学習させ、`q_table.json` を生成・更新します。
 
-   コマンド: python3 main.py
+```bash
+# 10万回のエピソードで学習
+python train_q_learning.py --episodes 100000
 
----
+# 既存のQテーブルに追加で5万回学習
+python train_q_learning.py --episodes 50000 --continue_training
+```
 
-## ディレクトリ構成
+#### Q学習エージェントの強さ評価
 
-.
-├── agents/
-│   ├── base_agent.py        # エージェント共通基底クラス
-│   ├── random_agent.py      # ランダムエージェント
-│   ├── minimax_agent.py     # Minimax エージェント
-│   ├── database_agent.py    # SQLite データベースエージェント
-│   ├── perfect_agent.py     # 完全エージェント
-│   └── q_learning_agent.py  # Q学習エージェント
-├── tests/                   # ユニットテスト一式
-├── gui.py                   # GUI管理クラス
-├── settings_ui.py           # 設定画面（先手/後手、エージェント選択）
-├── game_info_ui.py          # プレイヤー情報の表示UI
-├── board_drawer.py          # 盤面描画クラス
-├── game_logic.py            # ゲームロジック（勝敗判定など）
-├── create_database.py       # 全局面をMinimaxで解析しSQLiteとJSONに保存するスクリプト
-├── main.py                  # アプリ起動スクリプト
-├── train_q_learning.py      # Q学習エージェントを学習させるスクリプト
-├── q_table.json             # Q学習エージェントが学習した結果を保存するファイル
-├── perfect_moves.json       # 完全エージェントが使用する、すべての局面に対する最善手のJSONデータ
-├── tictactoe.db             # 全局面に対する最善手を含む SQLite DB
-└── README.md                # 本ドキュメント
+`verify_q_learning_strength.py` を使って、学習させたエージェントが他のAI（ランダム、ミニマックス、完全AI）に対してどの程度の強さかを確認できます。
 
----
+```bash
+# 各AIと1000回ずつ対戦して評価
+python verify_q_learning_strength.py --num_games 1000
+```
 
-## データベーススキーマ
+#### モデル同士の性能比較
 
-Database エージェントが使用する SQLite データベース（tictactoe.db）のスキーマは以下の通りです。
+`evaluate_models.py` を使って、2つの異なるQ学習モデル（`.json`ファイル）の性能を直接対決させて比較できます。
 
-CREATE TABLE tictactoe (
-    board TEXT PRIMARY KEY,     -- 盤面（例: "XOXOX    "）
-    best_move INTEGER,          -- 最善の手（0〜8, -1は終了局面）
-    result TEXT                 -- 結果（"X", "O", "draw", "continue"）
-);
+```bash
+python evaluate_models.py --model1 q_table_A.json --model2 q_table_B.json --num_games 500
+```
 
-各カラムの説明：
+## 開発者向け情報
 
-- board: 9 マスの盤面を左上から右下へ順に文字列化したもの（例: "XOX O X  "）。
-- best_move: 勝敗が決していない場合の最適な手。0〜8 の数字でマスを表します。
-- result: ゲームの結果。
-    - X または O: 勝者。
-    - draw: 引き分け。
-    - continue: ゲーム継続中。
-    - -1: 既に勝敗が決まっており、手を打つ必要がないことを示す。
+### セットアップ
 
----
+1.  **必勝手データベースの作成（任意）:**
+    `perfect_agent` が使用するデータベースを作成します。
+    ```bash
+    python create_database.py
+    ```
+    これにより、`tictactoe.db`が生成されます。
 
-## エージェント比較
+### テストの実行
 
-| エージェント     | 思考内容           | 特徴                               |
-| :--------------- | :----------------- | :--------------------------------- |
-| ランダム         | 空きマスを選ぶ     | 弱いが高速                         |
-| Minimax          | 先読みによる最適戦略 | 強いがやや低速                     |
-| Database         | DBに保存された手   | 非常に高速 + 完全なMinimaxの強さ |
-| Perfect          | JSONに保存された手 | 非常に高速 + 完全なMinimaxの強さ |
-| QLearning        | 強化学習           | 学習回数に応じて強くなる           |
+プロジェクトには `pytest` を使ったテストスイートが含まれています。
 
----
+```bash
+# すべてのテストを実行
+pytest
+```
 
-## テスト実行
+### テストカバレッジの集計
 
-コマンド: python3 -m unittest discover
+テストがプロジェクトのコードをどの程度カバーしているかを集計できます。
 
-または、個別のテストファイルを実行する場合：
+#### コンソールでの確認
 
-コマンド: python3 tests/test_minimax_agent.py
+```bash
+# カバレッジを計測し、カバーされていない行番号を表示
+pytest --cov=. --cov-report=term-missing
+```
 
----
+#### HTMLレポートの生成
 
-## テストカバレッジ計測
+より詳細なカバレッジレポートをHTMLファイルとして生成できます。
 
-コマンド: python3 -m coverage run -m unittest discover -s tests
-コマンド: python3 -m coverage report
+```bash
+# HTMLレポートを生成
+pytest --cov=. --cov-report=html
 
----
-
-## 使用ライブラリ
-
-- tkinter：GUI描画
-- sqlite3：局面データ保存
-- json: JSONファイル読み書き
-- tqdm: プログレスバー表示
-- argparse: コマンドライン引数解析
-- numpy: 数値計算
-- unittest: ユニットテスト
-
----
-
-## 今後の課題・拡張案
-
-- 対人戦モードの実装
-- ネット対戦機能の追加
-- 盤面サイズの可変対応（例：4×4、5×5）
-- 勝率ログの保存と学習機能の強化
-
----
-
-## ライセンス
-
-MIT License
-
----
-
-## 開発者メモ
-
-- データベース（tictactoe.db）に登録された局面は、すべて create_database.py によって自動生成されています。
-- best_move = -1 は、勝敗が決した局面（もう手を打つ必要がない）を意味します。
-- 完全エージェント（Perfectエージェント）が使用する perfect_moves.json は、create_database.py によって自動生成されます。
-- Q学習エージェントが使用する q_table.json は、train_q_learning.py によって自動生成されます。
+# 生成されたレポートを開く (macOSの場合)
+open htmlcov/index.html
+```

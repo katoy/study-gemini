@@ -10,42 +10,28 @@ class TicTacToe:
     Represents the Tic Tac Toe game logic.
     """
 
-    def __init__(self, player_select: bool, agent_type: str):
+    def __init__(self, agent_x=None, agent_o=None, human_player="X"):
         """
         Initializes a new Tic Tac Toe game.
-
         Args:
-            player_select (bool): True if the human plays first (as "X"),
-                False otherwise.
-            agent_type (str): Agent type ("ランダム", "Minimax", or "Database").
+            agent_x: The agent playing as 'X' (first player).
+            agent_o: The agent playing as 'O' (second player).
+            human_player: The symbol for the human player ('X' or 'O').
         """
         self.board = [[" " for _ in range(3)] for _ in range(3)]
-        # In Tic Tac Toe, "X" always goes first.
-        if player_select:
-            self.human_player = "X"
-            self.agent_player = "O"
-            self.current_player = "X"
-        else:
-            self.human_player = "O"
-            self.agent_player = "X"
-            self.current_player = "X"
-        self.agent = self._create_agent(agent_type)
+        self.agent_x = agent_x
+        self.agent_o = agent_o
+        self.human_player = human_player
+        self.agent_player = "O" if human_player == "X" else "X"
+        # "X" always goes first.
+        self.current_player = "X"
         self.winner_line = None
         self.game_over = False
 
-    def _create_agent(self, agent_type: str):
-        if agent_type == "ランダム":
-            return RandomAgent(self.agent_player)
-        elif agent_type == "Minimax":
-            return MinimaxAgent(self.agent_player)
-        elif agent_type == "Database":
-            return DatabaseAgent(self.agent_player)
-        elif agent_type == "QLearning":
-            return QLearningAgent(self.agent_player, q_table_file="q_table.json")  # q_table_fileを追加
-        elif agent_type == "Perfect":
-            return PerfectAgent(self.agent_player)
-        else:
-            raise ValueError("Invalid agent type provided")
+    def get_current_agent(self):
+        if self.current_player == "X":
+            return self.agent_x
+        return self.agent_o
 
     def make_move(self, row: int, col: int) -> bool:
         """
@@ -130,16 +116,3 @@ class TicTacToe:
     def switch_player(self):
         """Switches the current player."""
         self.current_player = "O" if self.current_player == "X" else "X"
-
-    def agent_move(self) -> bool:
-        """
-        Makes a move for the agent.
-
-        Returns:
-            bool: True if the agent made a move, False otherwise.
-        """
-        move = self.agent.get_move(self.board)
-        if move is not None:
-            row, col = move
-            return self.make_move(row, col)
-        return False
