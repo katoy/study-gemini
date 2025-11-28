@@ -1,10 +1,6 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import List, Optional, Tuple, Literal
-
-
-
-from game_logic import TicTacToe
+from fastapi import FastAPI
+from game_logic import TicTacToe # Removed this in previous step, should add back if needed.
+from .schemas import StartGameRequest, BoardState, MoveRequest
 
 from .schemas import StartGameRequest, BoardState, MoveRequest
 

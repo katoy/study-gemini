@@ -1,6 +1,5 @@
-from typing import List, Optional, Tuple, Literal
+from typing import List, Optional, Tuple
 from fastapi import HTTPException
-from pydantic import BaseModel # For StartGameRequest, BoardState, MoveRequest if they were in GameManager
 
 # エージェントクラスのインポート
 from agents.random_agent import RandomAgent
@@ -16,9 +15,6 @@ PLAYER_O = "O"
 DB_PATH = "tictactoe.db"
 Q_TABLE_PATH = "q_table.json"
 PERFECT_MOVES_FILE = "perfect_moves.json"
-
-# Import schemas (note: these are not directly used by GameManager methods, but good to have if needed)
-from .schemas import StartGameRequest, BoardState, MoveRequest # GameManager methods now return dict, so these are not directly used in GameManager.
 
 class GameManager:
 
@@ -100,7 +96,6 @@ class GameManager:
 
                 # PerfectAgent raises KeyError when game is over or no perfect move found
 
-                print(f"DEBUG: Agent {agent.player} raised KeyError: {e}")
                 self.game.check_winner() # Ensure game.game_over is updated
                 break # Break loop, as agent says game is over
                 
@@ -116,7 +111,6 @@ class GameManager:
                 if not self.game.game_over: # Only switch player if game is not over
                     self.game.switch_player()
             else:
-                print(f"DEBUG: Agent {agent.player} attempted an invalid move at ({row}, {col})")
                 self.game.check_winner() # Ensure game_over is updated even on an invalid move attempt
                 break # Break out to avoid infinite loop on invalid moves
     
