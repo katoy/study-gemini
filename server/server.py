@@ -1,66 +1,55 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Literal
+
+
 
 from game_logic import TicTacToe
 
+from .schemas import StartGameRequest, BoardState, MoveRequest
+
+PLAYER_X = "X"
+PLAYER_O = "O"
+DB_PATH = "tictactoe.db"
+Q_TABLE_PATH = "q_table.json"
+PERFECT_MOVES_FILE = "perfect_moves.json"
+
 app = FastAPI()
 
-# In-memory game state
-game: Optional[TicTacToe] = None
 
-class BoardState(BaseModel):
-    board: List[List[str]]
-    current_player: str
-    winner: Optional[str]
-    winner_line: Optional[Tuple[Tuple[int, int], Tuple[int, int], Tuple[int, int]]]
-    game_over: bool
+
+from .game_manager import game_manager
+
+
 
 @app.post("/game/start", response_model=BoardState)
-async def start_game():
-    global game
-    game = TicTacToe()
+async def start_game(request: StartGameRequest):
+    game_instance = game_manager.start_new_game(
+        request.player_x_type, request.player_o_type, request.human_player_symbol
+    )
     return BoardState(
-        board=game.board,
-        current_player=game.current_player,
-        winner=game.check_winner(),
-        winner_line=game.winner_line,
-        game_over=game.game_over
+        board=game_instance.board,
+        current_player=game_instance.current_player,
+        winner=game_instance.check_winner(),
+        winner_line=game_instance.winner_line,
+        game_over=game_instance.game_over
     )
 
 @app.get("/game/status", response_model=BoardState)
 async def get_game_status():
-    if game is None:
-        raise HTTPException(status_code=404, detail="Game not started")
-    return BoardState(
-        board=game.board,
-        current_player=game.current_player,
-        winner=game.check_winner(),
-        winner_line=game.winner_line,
-        game_over=game.game_over
-    )
+    game_state = game_manager.get_current_game_state()
+    return BoardState(**game_state)
 
-class MoveRequest(BaseModel):
-    row: int
-    col: int
+
 
 @app.post("/game/move", response_model=BoardState)
 async def make_move(move_request: MoveRequest):
-    global game
-    if game is None:
-        raise HTTPException(status_code=404, detail="Game not started")
-
-    if not game.make_move(move_request.row, move_request.col):
-        raise HTTPException(status_code=400, detail="Invalid move")
-
-    winner = game.check_winner()
-    if winner is None:
-        game.switch_player()
-
+    game_instance = game_manager.make_player_move(move_request.row, move_request.col)
+    winner = game_instance.check_winner() # check_winner again for final state
     return BoardState(
-        board=game.board,
-        current_player=game.current_player,
+        board=game_instance.board,
+        current_player=game_instance.current_player,
         winner=winner,
-        winner_line=game.winner_line,
-        game_over=game.game_over
+        winner_line=game_instance.winner_line,
+        game_over=game_instance.game_over
     )

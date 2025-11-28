@@ -28,8 +28,8 @@ class PerfectAgent(BaseAgent):
         """Loads the perfect moves from the JSON file."""
         if not os.path.exists(self.perfect_moves_file):
             raise FileNotFoundError(f"Perfect moves file not found: {self.perfect_moves_file}")
-        with open(self.perfect_moves_file, "r") as f:
-            return json.load(f)
+        with open(self.perfect_moves_file, "r", encoding="latin-1") as f:
+            return json.loads(f.read())
 
     def get_move(self, board: list) -> tuple[int, int]:
         """

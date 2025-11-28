@@ -11,7 +11,7 @@ from agents.perfect_agent import PerfectAgent
 def train_q_learning_agent(num_episodes, continue_training):
     """Trains the Q-learning agent using the fast Cython module."""
     q_agent = QLearningAgent(player='X', is_training=True) # This is a wrapper
-    if not continue_training and not os.getenv('PYTEST_CURRENT_TEST'):
+    if not continue_training:
         print("Starting new training. Resetting Q-table.")
         q_agent.q_table = {}
 
