@@ -1,21 +1,25 @@
 import json
 import os
 from agents.base_agent import BaseAgent
-import fast_trainer # Import the compiled Cython module
-import numpy as np # Add numpy import
+import fast_trainer  # Import the compiled Cython module
+import numpy as np  # Add numpy import
+
 
 class QLearningAgent(BaseAgent):
     """
     A wrapper for the optimized Cython Q-learning agent.
     This class handles the interface between the Python environment and the fast Cython module.
     """
-    def __init__(self, player: str, learning_rate=0.1, discount_factor=0.9, exploration_rate=1.0, min_exploration_rate=0.05, optimistic_initial_value=0.0, q_table_file="q_table.json", is_training=True):
+    def __init__(self, player: str, learning_rate=0.1, discount_factor=0.9, exploration_rate=1.0,
+                 min_exploration_rate=0.05, optimistic_initial_value=0.0,
+                 q_table_file="q_table.json", is_training=True):
         super().__init__(player)
         self.q_table_file = q_table_file
-        
+
         # Instantiate the fast agent from our Cython module
         self._fast_agent = fast_trainer.FastQLearningAgent(
-            player, learning_rate, discount_factor, exploration_rate, min_exploration_rate, optimistic_initial_value, is_training
+            player, learning_rate, discount_factor, exploration_rate,
+            min_exploration_rate, optimistic_initial_value, is_training
         )
         self.load_q_table()
 
@@ -34,7 +38,7 @@ class QLearningAgent(BaseAgent):
     @exploration_rate.setter
     def exploration_rate(self, value):
         self._fast_agent.exploration_rate = value
-        
+
     @property
     def q_table(self):
         # Returns a copy of the q_table for external access

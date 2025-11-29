@@ -51,7 +51,10 @@ class PerfectAgent(BaseAgent):
                 raise KeyError(f"The game is over for the board: {board_str}")
             return self.index_to_move(best_move_index)
         else:
-            raise KeyError(f"No perfect move found in perfect_moves for board: {board_str}. This pattern is not registered in the dictionary.")
+            raise KeyError(
+                f"No perfect move found in perfect_moves for board: {board_str}. "
+                f"This pattern is not registered in the dictionary."
+            )
 
     def board_to_string(self, board: list) -> str:
         return "".join(cell if cell != " " else " " for row in board for cell in row)

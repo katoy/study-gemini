@@ -21,6 +21,6 @@ def display_board(board_state):
         else:
             print(f"Game Over: Player {board_state['winner']} wins!")
     elif board_state["game_over"]:
-        print("Game Over.") # Should not happen if winner is None and game_over is True without draw
+        print("Game Over.")  # Should not happen if winner is None and game_over is True without draw
     else:
         print(f"Current Player: {board_state['current_player']}")

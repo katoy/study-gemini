@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk  # コンボボックスを使用するために追加
 
+
 class SettingsUI:
     """
     UI class for the game settings.

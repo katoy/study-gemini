@@ -6,11 +6,13 @@ from agents.random_agent import RandomAgent
 from agents.minimax_agent import MinimaxAgent
 from agents.perfect_agent import PerfectAgent
 
+
 def parse_args():
     """Parses command-line arguments."""
     parser = argparse.ArgumentParser(description="Verify the strength of a Q-learning agent.")
     parser.add_argument("--num_games", type=int, default=10, help="Number of games to play for each evaluation.")
     return parser.parse_args()
+
 
 def evaluate(q_agent_player: str, opponent_class, opponent_name: str, num_games: int):
     """
@@ -34,7 +36,7 @@ def evaluate(q_agent_player: str, opponent_class, opponent_name: str, num_games:
 
     for _ in tqdm(range(num_games), desc=f"Q-Agent({q_agent_player}) vs {opponent_name}({opponent_player})"):
         game = TicTacToe(agent_x=agent_x, agent_o=agent_o)
-        
+
         while not game.game_over:
             current_agent = game.get_current_agent()
             move = current_agent.get_move(game.board)
@@ -56,7 +58,7 @@ def evaluate(q_agent_player: str, opponent_class, opponent_name: str, num_games:
                 else:
                     losses += 1
                 break
-            
+
             game.switch_player()
 
     print(f"\n--- Q-Agent({q_agent_player}) vs {opponent_name}({opponent_player}) ---")
@@ -80,6 +82,7 @@ def main():
     evaluate('O', RandomAgent, "RandomAgent", args.num_games)
     evaluate('O', MinimaxAgent, "MinimaxAgent", args.num_games)
     evaluate('O', PerfectAgent, "PerfectAgent", args.num_games)
+
 
 if __name__ == "__main__":
     main()

@@ -5,6 +5,7 @@ import json
 # ロギング設定
 logging.basicConfig(level=logging.INFO)
 
+
 def check_winner(board: list) -> str | None:
     for row in board:
         if row[0] == row[1] == row[2] != " ":
@@ -18,14 +19,18 @@ def check_winner(board: list) -> str | None:
         return board[0][2]
     return None
 
+
 def is_board_full(board: list) -> bool:
     return all(cell != " " for row in board for cell in row)
+
 
 def board_to_string(board: list) -> str:
     return "".join(cell if cell != " " else " " for row in board for cell in row)
 
+
 def get_opponent(player: str) -> str:
     return "O" if player == "X" else "X"
+
 
 def minimax(board: list, depth: int, is_maximizing: bool, player: str) -> int:
     winner = check_winner(board)
@@ -57,11 +62,13 @@ def minimax(board: list, depth: int, is_maximizing: bool, player: str) -> int:
                 best_score = min(score, best_score)
         return best_score
 
+
 def insert_to_db(cursor, board_str, best_move, result):
     cursor.execute('''
         INSERT OR REPLACE INTO tictactoe (board, best_move, result)
         VALUES (?, ?, ?)
     ''', (board_str, best_move, result))
+
 
 def create_database(board: list, player: str, cursor, seen: set, perfect_moves: dict):
     board_str = board_to_string(board)
@@ -104,6 +111,7 @@ def create_database(board: list, player: str, cursor, seen: set, perfect_moves: 
             create_database(board, get_opponent(player), cursor, seen, perfect_moves)
             board[row][col] = " "
 
+
 def main():
     conn = sqlite3.connect("tictactoe.db")
     cursor = conn.cursor()
@@ -130,6 +138,7 @@ def main():
     with open("perfect_moves.json", "w") as f:
         json.dump(perfect_moves, f)
     print("✅ perfect_moves.json を生成しました。")
+
 
 if __name__ == "__main__":
     main()

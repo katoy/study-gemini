@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple
+from typing import Optional
 from fastapi import HTTPException
 
 # エージェントクラスのインポート
@@ -16,6 +16,7 @@ DB_PATH = "tictactoe.db"
 Q_TABLE_PATH = "q_table.json"
 PERFECT_MOVES_FILE = "perfect_moves.json"
 
+
 class GameManager:
 
     def __init__(self):
@@ -24,13 +25,13 @@ class GameManager:
 
         self.AGENT_CLASSES = {
 
-            "Human": None, # 人間はエージェントオブジェクトを持たない
+            "Human": None,  # 人間はエージェントオブジェクトを持たない
 
             "ランダム": RandomAgent,
 
             "Minimax": MinimaxAgent,
 
-            "Database": DatabaseAgent, # Add DatabaseAgent
+            "Database": DatabaseAgent,  # Add DatabaseAgent
 
             "Perfect": PerfectAgent,
 
@@ -38,17 +39,13 @@ class GameManager:
 
         }
 
-
-
     def _create_agent(self, agent_type: str, player_symbol: str):
 
         agent_class = self.AGENT_CLASSES.get(agent_type)
 
-        if agent_class is None: # Humanの場合
+        if agent_class is None:  # Humanの場合
 
             return None
-
-        
 
         if agent_type == "Perfect":
 
@@ -74,15 +71,11 @@ class GameManager:
 
             return agent_class(player_symbol)
 
-
-
     def _make_agent_move_if_needed(self):
 
         if self.game is None:
 
             return
-
-
 
         while not self.game.game_over and self.game.get_current_agent() is not None:
 
@@ -92,34 +85,34 @@ class GameManager:
 
                 move = agent.get_move([row[:] for row in self.game.board])
 
-            except KeyError as e:
+            except KeyError:
 
                 # PerfectAgent raises KeyError when game is over or no perfect move found
 
-                self.game.check_winner() # Ensure game.game_over is updated
-                break # Break loop, as agent says game is over
-                
+                self.game.check_winner()  # Ensure game.game_over is updated
+                break  # Break loop, as agent says game is over
+
             if move is None:
                 # If agent returns None, it implies no valid moves are available (e.g., board full/draw)
                 # Update game_over state based on current board.
-                self.game.check_winner() # This will update game.game_over and game.winner
+                self.game.check_winner()  # This will update game.game_over and game.winner
                 break
             row, col = move
             if self.game.make_move(row, col):
                 # After a move, check if the game is over (win or draw)
-                self.game.check_winner() # Update game.game_over and game.winner immediately
-                if not self.game.game_over: # Only switch player if game is not over
+                self.game.check_winner()  # Update game.game_over and game.winner immediately
+                if not self.game.game_over:  # Only switch player if game is not over
                     self.game.switch_player()
             else:
-                self.game.check_winner() # Ensure game_over is updated even on an invalid move attempt
-                break # Break out to avoid infinite loop on invalid moves
-    
+                self.game.check_winner()  # Ensure game_over is updated even on an invalid move attempt
+                break  # Break out to avoid infinite loop on invalid moves
+
     def start_new_game(self, player_x_type: str, player_o_type: str, human_player_symbol: str):
         agent_x = self._create_agent(player_x_type, PLAYER_X)
         agent_o = self._create_agent(player_o_type, PLAYER_O)
 
         self.game = TicTacToe(agent_x=agent_x, agent_o=agent_o, human_player=human_player_symbol)
-        
+
         # 最初のプレイヤーがエージェントの場合、手を打たせる
         self._make_agent_move_if_needed()
         return self.game
@@ -144,7 +137,7 @@ class GameManager:
         if current_agent is not None:
             # 現在のプレイヤーがエージェントの場合、このエンドポイントは呼ばれるべきではない
             # ただし、二重の安全策として、ここではエラーとしないが、クライアント側で制御すべき
-            pass # エージェントのターンは_make_agent_move_if_neededで処理されるため、ここでは無視
+            pass  # エージェントのターンは_make_agent_move_if_neededで処理されるため、ここでは無視
 
         if not self.game.make_move(row, col):
             raise HTTPException(status_code=400, detail="Invalid move")
@@ -153,7 +146,8 @@ class GameManager:
         if winner is None:
             self.game.switch_player()
             # 人間が手を打った後、次のプレイヤーがエージェントであれば、エージェントのターンを処理
-            self._make_agent_move_if_needed() # ここでエージェントのターンを処理
+            self._make_agent_move_if_needed()  # ここでエージェントのターンを処理
         return self.game
 
-game_manager = GameManager() # Instantiate the game manager
+
+game_manager = GameManager()  # Instantiate the game manager

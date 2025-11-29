@@ -3,6 +3,7 @@ from tqdm import tqdm
 from game_logic import TicTacToe
 from agents.q_learning_agent import QLearningAgent
 
+
 def evaluate_models(q_table_file1, q_table_file2, num_games):
     """
     Evaluates the strength of two Q-learning agents against each other.
@@ -18,7 +19,7 @@ def evaluate_models(q_table_file1, q_table_file2, num_games):
     print("\n--- Agent1 (X) vs Agent2 (O) ---")
     agent1 = QLearningAgent(player='X', q_table_file=q_table_file1, is_training=False)
     agent2 = QLearningAgent(player='O', q_table_file=q_table_file2, is_training=False)
-    
+
     for _ in tqdm(range(num_games), desc="Agent1(X) vs Agent2(O)"):
         game = TicTacToe(agent_x=agent1, agent_o=agent2)
         while not game.game_over:
@@ -39,7 +40,7 @@ def evaluate_models(q_table_file1, q_table_file2, num_games):
             agent2_wins += 1
         else:
             draws += 1
-            
+
     print(f"Agent1 ({q_table_file1}) の勝利: {agent1_wins} ({agent1_wins/num_games:.1%})")
     print(f"Agent2 ({q_table_file2}) の勝利: {agent2_wins} ({agent2_wins/num_games:.1%})")
     print(f"引き分け: {draws} ({draws/num_games:.1%})")
@@ -48,7 +49,7 @@ def evaluate_models(q_table_file1, q_table_file2, num_games):
     agent1_wins_as_o = 0
     agent2_wins_as_x = 0
     draws_as_o = 0
-    
+
     print("\n--- Agent2 (X) vs Agent1 (O) ---")
     agent2_as_x = QLearningAgent(player='X', q_table_file=q_table_file2, is_training=False)
     agent1_as_o = QLearningAgent(player='O', q_table_file=q_table_file1, is_training=False)
@@ -77,17 +78,18 @@ def evaluate_models(q_table_file1, q_table_file2, num_games):
     print(f"Agent1 ({q_table_file1}) の勝利: {agent1_wins_as_o} ({agent1_wins_as_o/num_games:.1%})")
     print(f"Agent2 ({q_table_file2}) の勝利: {agent2_wins_as_x} ({agent2_wins_as_x/num_games:.1%})")
     print(f"引き分け: {draws_as_o} ({draws_as_o/num_games:.1%})")
-    
+
     # --- 総合結果 ---
     total_agent1_wins = agent1_wins + agent1_wins_as_o
     total_agent2_wins = agent2_wins + agent2_wins_as_x
     total_draws = draws + draws_as_o
     total_games = num_games * 2
-    
+
     print("\n--- 総合結果 ---")
     print(f"Agent1 ({q_table_file1}) の総勝利数: {total_agent1_wins} ({total_agent1_wins/total_games:.1%})")
     print(f"Agent2 ({q_table_file2}) の総勝利数: {total_agent2_wins} ({total_agent2_wins/total_games:.1%})")
     print(f"総引き分け数: {total_draws} ({total_draws/total_games:.1%})")
+
 
 def main():
     parser = argparse.ArgumentParser(description="Evaluate two Q-learning models against each other.")
@@ -97,6 +99,7 @@ def main():
     args = parser.parse_args()
 
     evaluate_models(args.model1, args.model2, args.num_games)
+
 
 if __name__ == "__main__":
     main()

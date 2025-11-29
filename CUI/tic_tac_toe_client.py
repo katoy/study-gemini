@@ -1,6 +1,7 @@
 import requests
 import time
-from .cui_display import display_board # Will create this module later
+from .cui_display import display_board  # Will create this module later
+
 
 class TicTacToeClient:
     def __init__(self, server_url: str):
@@ -19,18 +20,18 @@ class TicTacToeClient:
             if e.response.status_code == 400:
                 error_detail = e.response.json().get("detail", "Invalid move")
                 print(f"Error: {error_detail}")
-                raise ValueError(error_detail) # Raise a specific error for invalid moves
+                raise ValueError(error_detail)  # Raise a specific error for invalid moves
             elif e.response.status_code == 404:
                 print("Error: Game not started or endpoint not found.")
                 raise ValueError("Game not started")
             else:
                 print(f"HTTP Error: {e}")
                 raise
-        except requests.exceptions.ConnectionError as e:
+        except requests.exceptions.ConnectionError:
             print(f"Connection Error: Could not connect to the server at {self.server_url}. Is the server running?")
             raise
-        except requests.exceptions.RequestException as e:
-            print(f"An unexpected error occurred during request: {e}")
+        except requests.exceptions.RequestException:
+            print("An unexpected error occurred during request.")
             raise
 
     def get_player_symbol_choice(self):
@@ -75,7 +76,7 @@ class TicTacToeClient:
     def play_single_game(self):
         print("\n--- Start New Tic Tac Toe Game ---")
         human_player_symbol = self.get_player_symbol_choice()
-        
+
         player_x_type = self.get_agent_type_choice("X")
         player_o_type = self.get_agent_type_choice("O")
 
@@ -90,11 +91,11 @@ class TicTacToeClient:
             game_state = self._send_request("POST", "game/start", start_game_data)
             display_board(game_state)
         except (requests.exceptions.RequestException, ValueError):
-            return # Allow main loop to prompt for play again
+            return  # Allow main loop to prompt for play again
 
         while not game_state["game_over"]:
             current_player = game_state["current_player"]
-            
+
             is_human_turn = False
             if current_player == "X" and player_x_type == "Human":
                 is_human_turn = True
@@ -103,22 +104,22 @@ class TicTacToeClient:
 
             if is_human_turn:
                 move = self.get_user_move()
-                if move is None: # User chose to quit
+                if move is None:  # User chose to quit
                     print("Game interrupted by user.")
-                    return # Exit current game
+                    return  # Exit current game
                 row, col = move
                 try:
                     game_state = self._send_request("POST", "game/move", {"row": row, "col": col})
                     display_board(game_state)
-                except ValueError: # Caught invalid move from _send_request
-                    continue # Prompt for move again
+                except ValueError:  # Caught invalid move from _send_request
+                    continue  # Prompt for move again
                 except requests.exceptions.RequestException:
-                    break # Fatal error, exit game loop
+                    break  # Fatal error, exit game loop
             else:
                 print(f"Player {current_player} (Agent) is thinking...")
-                time.sleep(1) # Simulate agent thinking
+                time.sleep(1)  # Simulate agent thinking
                 try:
                     game_state = self._send_request("GET", "game/status")
                     display_board(game_state)
                 except requests.exceptions.RequestException:
-                    break # Fatal error, exit game loop
+                    break  # Fatal error, exit game loop
