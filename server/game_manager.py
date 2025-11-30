@@ -28,6 +28,7 @@ class GameManager:
             "Human": None,  # 人間はエージェントオブジェクトを持たない
 
             "ランダム": RandomAgent,
+            "Random": RandomAgent,
 
             "Minimax": MinimaxAgent,
 

@@ -73,3 +73,5 @@ coverage.xml
 
 # OS
 .DS_Store
+
+!flutter/**/lib/
