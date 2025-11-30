@@ -65,5 +65,45 @@ void main() {
       expect(result.board[0][0], 'X');
       expect(result.currentPlayer, 'O');
     });
+
+    test('makeMove throws exception on failure', () async {
+      final client = MockClient((request) async {
+        return http.Response('Error', 500);
+      });
+
+      final apiService = ApiService(client: client);
+      final request = MoveRequest(row: 0, col: 0);
+
+      expect(apiService.makeMove(request), throwsException);
+    });
+
+    test('getGameStatus returns BoardState on success', () async {
+      final client = MockClient((request) async {
+        return http.Response(jsonEncode({
+          'board': [['X', 'O', ''], ['', '', ''], ['', '', '']],
+          'current_player': 'X',
+          'winner': null,
+          'winner_line': null,
+          'game_over': false,
+        }), 200);
+      });
+
+      final apiService = ApiService(client: client);
+      final result = await apiService.getGameStatus();
+
+      expect(result.board[0][0], 'X');
+      expect(result.board[0][1], 'O');
+      expect(result.currentPlayer, 'X');
+    });
+
+    test('getGameStatus throws exception on failure', () async {
+      final client = MockClient((request) async {
+        return http.Response('Error', 500);
+      });
+
+      final apiService = ApiService(client: client);
+
+      expect(apiService.getGameStatus(), throwsException);
+    });
   });
 }
