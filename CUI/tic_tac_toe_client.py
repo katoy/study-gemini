@@ -6,6 +6,7 @@ from .cui_display import display_board  # Will create this module later
 class TicTacToeClient:
     def __init__(self, server_url: str):
         self.server_url = server_url
+        self.available_agents = None  # キャッシュ用
 
     def _send_request(self, method: str, endpoint: str, data: dict = None):
         url = f"{self.server_url}/{endpoint}"
@@ -42,8 +43,33 @@ class TicTacToeClient:
             else:
                 print("Invalid choice. Please enter 'X' or 'O'.")
 
+    def get_available_agents(self):
+        """
+        サーバーから利用可能な agent のリストを取得
+        
+        Returns:
+            list: agent 名のリスト、エラー時は None
+        """
+        if self.available_agents is not None:
+            return self.available_agents  # キャッシュを返す
+        
+        try:
+            response = self._send_request("GET", "agents")
+            self.available_agents = response.get("agents", [])
+            return self.available_agents
+        except requests.exceptions.RequestException:
+            print("Warning: Could not fetch agent list from server. Using fallback list.")
+            # フォールバック: デフォルトのリスト
+            self.available_agents = ["Human", "Random", "Minimax", "Database", "QLearning", "Perfect"]
+            return self.available_agents
+
     def get_agent_type_choice(self, player_char):
-        agent_types = ["Human", "ランダム", "Minimax", "Database", "QLearning", "Perfect"]
+        agent_types = self.get_available_agents()
+        
+        if not agent_types:
+            print("Error: No agents available.")
+            return "Human"  # フォールバック
+        
         while True:
             print(f"\nChoose agent type for player {player_char}:")
             for i, agent_type in enumerate(agent_types):

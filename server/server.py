@@ -1,5 +1,6 @@
 from fastapi import FastAPI
-from .schemas import StartGameRequest, BoardState, MoveRequest
+from fastapi.middleware.cors import CORSMiddleware
+from .schemas import StartGameRequest, BoardState, MoveRequest, AvailableAgentsResponse
 from .game_manager import game_manager
 
 PLAYER_X = "X"
@@ -9,6 +10,16 @@ Q_TABLE_PATH = "q_table.json"
 PERFECT_MOVES_FILE = "perfect_moves.json"
 
 app = FastAPI()
+
+# CORS設定（必ずFastAPIインスタンス作成直後に追加）
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=["*"],
+    expose_headers=["*"],
+)
 
 
 @app.post("/game/start", response_model=BoardState)
@@ -34,7 +45,7 @@ async def get_game_status():
 @app.post("/game/move", response_model=BoardState)
 async def make_move(move_request: MoveRequest):
     game_instance = game_manager.make_player_move(move_request.row, move_request.col)
-    winner = game_instance.check_winner()  # check_winner again for final state
+    winner = game_instance.check_winner()
     return BoardState(
         board=game_instance.board,
         current_player=game_instance.current_player,
@@ -42,3 +53,9 @@ async def make_move(move_request: MoveRequest):
         winner_line=game_instance.winner_line,
         game_over=game_instance.game_over
     )
+
+
+@app.get("/agents", response_model=AvailableAgentsResponse)
+async def get_available_agents():
+    agents = game_manager.get_available_agents()
+    return AvailableAgentsResponse(agents=agents)

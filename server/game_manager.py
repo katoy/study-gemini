@@ -1,12 +1,11 @@
 from typing import Optional
 from fastapi import HTTPException
+import os
+import importlib
+import inspect
 
-# エージェントクラスのインポート
-from agents.random_agent import RandomAgent
-from agents.minimax_agent import MinimaxAgent
-from agents.perfect_agent import PerfectAgent
-from agents.q_learning_agent import QLearningAgent
-from agents.database_agent import DatabaseAgent
+# BaseAgentのインポート
+from agents.base_agent import BaseAgent
 
 from game_logic import TicTacToe
 
@@ -23,22 +22,71 @@ class GameManager:
 
         self.game: Optional[TicTacToe] = None
 
-        self.AGENT_CLASSES = {
-
-            "Human": None,  # 人間はエージェントオブジェクトを持たない
-
-            "ランダム": RandomAgent,
-            "Random": RandomAgent,
-
-            "Minimax": MinimaxAgent,
-
-            "Database": DatabaseAgent,  # Add DatabaseAgent
-
-            "Perfect": PerfectAgent,
-
-            "QLearning": QLearningAgent,
-
+        # 動的に検出されたエージェントクラスを格納
+        self.AGENT_CLASSES = {}
+        
+        # 日本語の別名マッピング
+        self.AGENT_ALIASES = {
+            "Random": "ランダム"
         }
+        
+        # agents ディレクトリから動的にエージェントを検出
+        self._discover_agents()
+        
+        # Human エージェントを手動で追加（BaseAgentを継承していないため）
+        self.AGENT_CLASSES["Human"] = None
+
+    def _discover_agents(self):
+        """
+        agents/ ディレクトリをスキャンして、BaseAgent を継承するクラスを自動検出
+        """
+        agents_dir = "agents"
+        
+        if not os.path.exists(agents_dir):
+            return
+        
+        # agents ディレクトリ内の全ての .py ファイルを取得
+        for filename in os.listdir(agents_dir):
+            if filename.endswith(".py") and not filename.startswith("__") and filename != "base_agent.py":
+                module_name = filename[:-3]  # .py を除去
+                
+                try:
+                    # モジュールをインポート
+                    module = importlib.import_module(f"agents.{module_name}")
+                    
+                    # モジュール内の全てのクラスを検査
+                    for name, obj in inspect.getmembers(module, inspect.isclass):
+                        # BaseAgent を継承し、BaseAgent 自身ではないクラスを検出
+                        if issubclass(obj, BaseAgent) and obj is not BaseAgent:
+                            # クラス名から "Agent" を除去して agent 名を生成
+                            agent_name = name.replace("Agent", "")
+                            self.AGENT_CLASSES[agent_name] = obj
+                            
+                            # 別名がある場合は追加
+                            if agent_name in self.AGENT_ALIASES:
+                                self.AGENT_CLASSES[self.AGENT_ALIASES[agent_name]] = obj
+                            
+                except Exception as e:
+                    # インポートエラーは無視（ログに記録することも可能）
+                    print(f"Warning: Could not import {module_name}: {e}")
+                    continue
+
+    def get_available_agents(self):
+        """
+        利用可能な agent のリストを返す
+        
+        Returns:
+            list: agent 名のリスト
+        """
+        # 重複を除去し、Human を最初に配置
+        agents = ["Human"]
+        
+        # 日本語の別名を除外し、英語名のみを追加
+        for agent_name in sorted(self.AGENT_CLASSES.keys()):
+            if agent_name != "Human" and agent_name not in self.AGENT_ALIASES.values():
+                agents.append(agent_name)
+        
+        return agents
 
     def _create_agent(self, agent_type: str, player_symbol: str):
 

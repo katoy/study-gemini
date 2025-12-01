@@ -68,7 +68,7 @@ def test_create_agent_returns_correct_instance(game_manager_instance, agent_type
             # For now, rely on actual instantiation.
             pass
 
-@patch('server.game_manager.QLearningAgent')
+@patch('agents.q_learning_agent.QLearningAgent')
 def test_create_agent_qlearning_file_not_found(mock_q_agent_class, game_manager_instance):
     # Ensure that GameManager uses our mocked QLearningAgent
     game_manager_instance.AGENT_CLASSES["QLearning"] = mock_q_agent_class

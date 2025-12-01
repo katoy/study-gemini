@@ -27,3 +27,7 @@ class BoardState(BaseModel):
 class MoveRequest(BaseModel):
     row: int = Field(ge=0, le=2)  # row must be between 0 and 2
     col: int = Field(ge=0, le=2)  # col must be between 0 and 2
+
+
+class AvailableAgentsResponse(BaseModel):
+    agents: List[str]  # 利用可能な agent 名のリスト

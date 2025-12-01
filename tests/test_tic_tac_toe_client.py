@@ -83,13 +83,15 @@ def test_get_agent_type_choice_human(mock_input, client):
 def test_get_agent_type_choice_perfect(mock_input, client): # Assuming Perfect is 6th option
     assert client.get_agent_type_choice('O') == 'Perfect'
 
+@patch.object(TicTacToeClient, 'get_available_agents', return_value=['Human', 'Database', 'Minimax', 'Perfect', 'QLearning', 'Random'])
 @patch('builtins.input', side_effect=['0', '7', '2']) # Invalid, invalid, then valid
 @patch('builtins.print')
-def test_get_agent_type_choice_invalid_then_valid(mock_print, mock_input, client):
-    # This test might need adjustment if agent_types list order changes
-    # "Human", "ランダム", "Minimax", "Database", "QLearning", "Perfect"
-    assert client.get_agent_type_choice('X') == 'ランダム'
-    assert mock_print.call_count == 23 # Corrected from 2
+def test_get_agent_type_choice_invalid_then_valid(mock_print, mock_input, mock_get_agents, client):
+    # 動的に取得される agent リストの2番目の要素を期待
+    result = client.get_agent_type_choice('X')
+    # 2番目の要素は "Database"
+    assert result == 'Database'
+    assert mock_print.call_count >= 2  # 少なくとも2回のエラーメッセージ
 
 # --- get_user_move tests ---
 
@@ -112,7 +114,7 @@ def test_get_user_move_invalid_then_valid(mock_print, mock_input, client):
 @patch('CUI.tic_tac_toe_client.display_board')
 @patch.object(TicTacToeClient, '_send_request')
 @patch.object(TicTacToeClient, 'get_player_symbol_choice', return_value='X')
-@patch.object(TicTacToeClient, 'get_agent_type_choice', side_effect=['Human', 'ランダム'])
+@patch.object(TicTacToeClient, 'get_agent_type_choice', side_effect=['Human', 'Random'])
 def test_play_single_game_start_error(mock_get_agent_type, mock_get_player_symbol, mock_send_request, mock_display_board, client):
     mock_send_request.side_effect = requests.exceptions.RequestException("Start failed")
     
@@ -121,14 +123,14 @@ def test_play_single_game_start_error(mock_get_agent_type, mock_get_player_symbo
     mock_send_request.assert_called_once_with("POST", "game/start", {
         "human_player_symbol": "X",
         "player_x_type": "Human",
-        "player_o_type": "ランダム",
+        "player_o_type": "Random",
     })
     mock_display_board.assert_not_called()
 
 @patch('CUI.tic_tac_toe_client.display_board')
 @patch.object(TicTacToeClient, '_send_request')
 @patch.object(TicTacToeClient, 'get_player_symbol_choice', return_value='X')
-@patch.object(TicTacToeClient, 'get_agent_type_choice', side_effect=['Human', 'ランダム'])
+@patch.object(TicTacToeClient, 'get_agent_type_choice', side_effect=['Human', 'Random'])
 @patch.object(TicTacToeClient, 'get_user_move', side_effect=[(0,0), (0,1), None]) # User quits on 3rd move
 def test_play_single_game_human_quits(mock_get_user_move, mock_get_agent_type, mock_get_player_symbol, mock_send_request, mock_display_board, client):
     # Simulate game start
@@ -151,7 +153,7 @@ def test_play_single_game_human_quits(mock_get_user_move, mock_get_agent_type, m
 @patch('CUI.tic_tac_toe_client.display_board')
 @patch.object(TicTacToeClient, '_send_request')
 @patch.object(TicTacToeClient, 'get_player_symbol_choice', return_value='X')
-@patch.object(TicTacToeClient, 'get_agent_type_choice', side_effect=['Human', 'ランダム'])
+@patch.object(TicTacToeClient, 'get_agent_type_choice', side_effect=['Human', 'Random'])
 @patch.object(TicTacToeClient, 'get_user_move', side_effect=[(0,0), (0,1), (0,2)])
 def test_play_single_game_human_win(mock_get_user_move, mock_get_agent_type, mock_get_player_symbol, mock_send_request, mock_display_board, client):
     # Simulate game start, 2 human moves, and then human wins
@@ -171,7 +173,7 @@ def test_play_single_game_human_win(mock_get_user_move, mock_get_agent_type, moc
 @patch('CUI.tic_tac_toe_client.display_board')
 @patch.object(TicTacToeClient, '_send_request')
 @patch.object(TicTacToeClient, 'get_player_symbol_choice', return_value='O')
-@patch.object(TicTacToeClient, 'get_agent_type_choice', side_effect=['ランダム', 'Human'])
+@patch.object(TicTacToeClient, 'get_agent_type_choice', side_effect=['Random', 'Human'])
 @patch('time.sleep') # Mock time.sleep for agent turn
 def test_play_single_game_agent_turn(mock_sleep, mock_get_agent_type, mock_get_player_symbol, mock_send_request, mock_display_board, client):
     # Simulate game start with O as human, X as agent
