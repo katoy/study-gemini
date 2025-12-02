@@ -156,9 +156,13 @@ class TicTacToeGUI:
 
     def agent_first_move(self):
         """Handles the agent's first move."""
+        print("DEBUG: agent_first_move called.")
         if self.game.current_player == self.game.agent_player:
             current_agent_instance = self.game.get_current_agent()
             if current_agent_instance:
+                print(
+                    f"DEBUG: Agent '{self.game.current_player}' is making the first move."
+                )
                 row, col = current_agent_instance.get_move(self.game.board)
                 if self.game.make_move(row, col):
                     self.board_drawer.draw_board()
@@ -166,6 +170,7 @@ class TicTacToeGUI:
 
     def on_canvas_click(self, event):
         """Handles the canvas click event."""
+        print("DEBUG: on_canvas_click called.")
         if self.game.current_player == self.game.human_player:
             col = event.x // 100
             row = event.y // 100
@@ -188,9 +193,11 @@ class TicTacToeGUI:
 
     def agent_turn(self):
         """Handles the agent's turn."""
+        print("DEBUG: agent_turn called.")
         if self.game.current_player == self.game.agent_player:
             current_agent_instance = self.game.get_current_agent()
             if current_agent_instance:
+                print(f"DEBUG: Agent '{self.game.current_player}' is making a move.")
                 # エージェントに現在のゲームボードの状態を渡して次の手を取得
                 row, col = current_agent_instance.get_move(self.game.board)
                 if self.game.make_move(row, col):

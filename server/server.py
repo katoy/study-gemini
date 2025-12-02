@@ -1,6 +1,7 @@
+import logging  # Added import
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Optional # Add this import
+from typing import Optional  # Add this import
 from .schemas import StartGameRequest, BoardState, MoveRequest, AvailableAgentsResponse
 from .game_manager import GameManager  # Import the class, not the instance
 
@@ -9,6 +10,31 @@ PLAYER_O = "O"
 DB_PATH = "tictactoe.db"
 Q_TABLE_PATH = "q_table.json"
 PERFECT_MOVES_FILE = "perfect_moves.json"
+
+# Configure logging to a file
+logging.basicConfig(
+    level=logging.INFO,  # Set desired log level (e.g., DEBUG, INFO, WARNING, ERROR)
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler("app.log"),  # Log to app.log
+        logging.StreamHandler(),  # Also log to console (stdout/stderr)
+    ],
+)
+# Suppress uvicorn's default handler to avoid duplicate logs if StreamHandler is added
+# For uvicorn logs specifically, you might configure its loggers later or disable its default
+# However, the above basicConfig will set up a root logger which most things will use.
+# To specifically capture uvicorn's access logs and ensure they go to file:
+uvicorn_access_logger = logging.getLogger("uvicorn.access")
+uvicorn_access_logger.handlers = [
+    logging.FileHandler("app.log"),
+    logging.StreamHandler(),
+]
+uvicorn_error_logger = logging.getLogger("uvicorn.error")
+uvicorn_error_logger.handlers = [
+    logging.FileHandler("app.log"),
+    logging.StreamHandler(),
+]
+
 
 app = FastAPI()
 
@@ -25,6 +51,7 @@ app.add_middleware(
 
 # GameManagerのシングルトンインスタンスを保持
 _game_manager_instance: Optional[GameManager] = None
+
 
 def get_game_manager() -> GameManager:
     global _game_manager_instance

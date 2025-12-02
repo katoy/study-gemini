@@ -4,7 +4,7 @@ import importlib
 import inspect
 from agents.base_agent import BaseAgent
 
-AGENT_ALIASES = {"Random": "ランダム"}
+AGENT_ALIASES = {"Random": "ランダム", "ChatGPT": "ChatGPT"}
 
 
 def get_agent_details():
