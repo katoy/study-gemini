@@ -21,7 +21,9 @@ class TicTacToeClient:
             if e.response.status_code == 400:
                 error_detail = e.response.json().get("detail", "Invalid move")
                 print(f"Error: {error_detail}")
-                raise ValueError(error_detail)  # Raise a specific error for invalid moves
+                raise ValueError(
+                    error_detail
+                )  # Raise a specific error for invalid moves
             elif e.response.status_code == 404:
                 print("Error: Game not started or endpoint not found.")
                 raise ValueError("Game not started")
@@ -29,7 +31,9 @@ class TicTacToeClient:
                 print(f"HTTP Error: {e}")
                 raise
         except requests.exceptions.ConnectionError:
-            print(f"Connection Error: Could not connect to the server at {self.server_url}. Is the server running?")
+            print(
+                f"Connection Error: Could not connect to the server at {self.server_url}. Is the server running?"
+            )
             raise
         except requests.exceptions.RequestException:
             print("An unexpected error occurred during request.")
@@ -46,30 +50,38 @@ class TicTacToeClient:
     def get_available_agents(self):
         """
         サーバーから利用可能な agent のリストを取得
-        
         Returns:
             list: agent 名のリスト、エラー時は None
         """
         if self.available_agents is not None:
             return self.available_agents  # キャッシュを返す
-        
+
         try:
             response = self._send_request("GET", "agents")
             self.available_agents = response.get("agents", [])
             return self.available_agents
         except requests.exceptions.RequestException:
-            print("Warning: Could not fetch agent list from server. Using fallback list.")
+            print(
+                "Warning: Could not fetch agent list from server. Using fallback list."
+            )
             # フォールバック: デフォルトのリスト
-            self.available_agents = ["Human", "Random", "Minimax", "Database", "QLearning", "Perfect"]
+            self.available_agents = [
+                "Human",
+                "Random",
+                "Minimax",
+                "Database",
+                "QLearning",
+                "Perfect",
+            ]
             return self.available_agents
 
     def get_agent_type_choice(self, player_char):
         agent_types = self.get_available_agents()
-        
+
         if not agent_types:
             print("Error: No agents available.")
             return "Human"  # フォールバック
-        
+
         while True:
             print(f"\nChoose agent type for player {player_char}:")
             for i, agent_type in enumerate(agent_types):
@@ -79,7 +91,9 @@ class TicTacToeClient:
                 if 1 <= choice_num <= len(agent_types):
                     return agent_types[choice_num - 1]
                 else:
-                    print(f"Invalid number. Please enter a number between 1 and {len(agent_types)}.")
+                    print(
+                        f"Invalid number. Please enter a number between 1 and {len(agent_types)}."
+                    )
             except ValueError:
                 print("Invalid input. Please enter a number.")
 
@@ -135,7 +149,9 @@ class TicTacToeClient:
                     return  # Exit current game
                 row, col = move
                 try:
-                    game_state = self._send_request("POST", "game/move", {"row": row, "col": col})
+                    game_state = self._send_request(
+                        "POST", "game/move", {"row": row, "col": col}
+                    )
                     display_board(game_state)
                 except ValueError:  # Caught invalid move from _send_request
                     continue  # Prompt for move again

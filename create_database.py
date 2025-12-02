@@ -64,10 +64,13 @@ def minimax(board: list, depth: int, is_maximizing: bool, player: str) -> int:
 
 
 def insert_to_db(cursor, board_str, best_move, result):
-    cursor.execute('''
+    cursor.execute(
+        """
         INSERT OR REPLACE INTO tictactoe (board, best_move, result)
         VALUES (?, ?, ?)
-    ''', (board_str, best_move, result))
+    """,
+        (board_str, best_move, result),
+    )
 
 
 def create_database(board: list, player: str, cursor, seen: set, perfect_moves: dict):
@@ -117,13 +120,15 @@ def main():
     cursor = conn.cursor()
 
     # テーブル作成
-    cursor.execute('''
+    cursor.execute(
+        """
         CREATE TABLE IF NOT EXISTS tictactoe (
             board TEXT PRIMARY KEY,
             best_move INTEGER,
             result TEXT
         )
-    ''')
+    """
+    )
 
     empty_board = [[" " for _ in range(3)] for _ in range(3)]
     seen = set()

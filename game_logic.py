@@ -57,40 +57,20 @@ class TicTacToe:
         """
         # Check rows and columns
         for i in range(3):
-            if (
-                self.board[i][0]
-                == self.board[i][1]
-                == self.board[i][2]
-                != " "
-            ):
+            if self.board[i][0] == self.board[i][1] == self.board[i][2] != " ":
                 self.winner_line = ((i, 0), (i, 1), (i, 2))  # All 3 cells
                 self.game_over = True
                 return self.board[i][0]
-            if (
-                self.board[0][i]
-                == self.board[1][i]
-                == self.board[2][i]
-                != " "
-            ):
+            if self.board[0][i] == self.board[1][i] == self.board[2][i] != " ":
                 self.winner_line = ((0, i), (1, i), (2, i))  # All 3 cells
                 self.game_over = True
                 return self.board[0][i]
         # Check diagonals
-        if (
-            self.board[0][0]
-            == self.board[1][1]
-            == self.board[2][2]
-            != " "
-        ):
+        if self.board[0][0] == self.board[1][1] == self.board[2][2] != " ":
             self.winner_line = ((0, 0), (1, 1), (2, 2))  # All 3 cells
             self.game_over = True
             return self.board[0][0]
-        if (
-            self.board[0][2]
-            == self.board[1][1]
-            == self.board[2][0]
-            != " "
-        ):
+        if self.board[0][2] == self.board[1][1] == self.board[2][0] != " ":
             self.winner_line = ((0, 2), (1, 1), (2, 0))  # All 3 cells
             self.game_over = True
             return self.board[0][2]

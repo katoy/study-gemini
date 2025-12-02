@@ -1,18 +1,25 @@
 import tkinter as tk
-from tkinter import ttk  # コンボボックスを使用するために追加
+from tkinter import ttk
+
+
+from agent_discovery import get_agent_details
 
 
 class SettingsUI:
-    """
-    UI class for the game settings.
-    """
-
     def __init__(self, gui, master):
         self.gui = gui
         self.master = master
         self.settings_frame = None
         self.player_var = tk.BooleanVar(value=True)
-        self.agent_var = tk.StringVar(value="ランダム")
+        self.agent_var = tk.StringVar()
+
+        # 共通モジュールからエージェント詳細を取得
+        self.agent_options_for_display, self.AGENT_CLASSES = get_agent_details()
+
+        if self.agent_options_for_display:
+            self.agent_var.set(self.agent_options_for_display[0])
+        else:
+            self.agent_var.set("エージェントなし")
 
     def build_settings_ui(self):
         """Builds the settings UI (first/second, agent selection)."""
@@ -23,7 +30,6 @@ class SettingsUI:
             self.settings_frame = tk.Frame(self.master, bg="#333333")
             self.settings_frame.pack()
 
-        # プレイヤーの順番設定フレーム
         self.player_frame = tk.LabelFrame(
             self.settings_frame,
             text="プレイヤーの順番",
@@ -55,9 +61,7 @@ class SettingsUI:
             selectcolor="#555555",
             font=("Arial", 12, "bold"),
         )
-        self.player_second_radio.pack(side="left", padx=10)
 
-        # エージェント選択フレーム
         self.agent_frame = tk.LabelFrame(
             self.settings_frame,
             text="対戦エージェント",
@@ -67,24 +71,16 @@ class SettingsUI:
             labelanchor="n",
         )
         self.agent_frame.pack(pady=10)
-
-        # コンボボックスの作成
-        self.agent_options = [
-            "ランダム",
-            "Minimax",
-            "Database",
-            "Perfect",
-            "QLearning",
-        ]
         self.agent_combo = ttk.Combobox(
             self.agent_frame,
             textvariable=self.agent_var,
-            values=self.agent_options,
+            values=self.agent_options_for_display,
             state="readonly",
             font=("Arial", 12),
         )
         self.agent_combo.pack(pady=5)
-        self.agent_combo.current(0)  # デフォルトで最初の項目を選択
+        if self.agent_options_for_display:
+            self.agent_combo.current(0)
 
         # ボタンフレーム
         self.buttons_frame = tk.Frame(self.settings_frame, bg="#333333")

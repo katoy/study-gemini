@@ -9,8 +9,15 @@ from agents.perfect_agent import PerfectAgent
 
 def parse_args():
     """Parses command-line arguments."""
-    parser = argparse.ArgumentParser(description="Verify the strength of a Q-learning agent.")
-    parser.add_argument("--num_games", type=int, default=10, help="Number of games to play for each evaluation.")
+    parser = argparse.ArgumentParser(
+        description="Verify the strength of a Q-learning agent."
+    )
+    parser.add_argument(
+        "--num_games",
+        type=int,
+        default=10,
+        help="Number of games to play for each evaluation.",
+    )
     return parser.parse_args()
 
 
@@ -29,12 +36,15 @@ def evaluate(q_agent_player: str, opponent_class, opponent_name: str, num_games:
     opponent_player = "O" if q_agent_player == "X" else "X"
     opponent_agent = opponent_class(player=opponent_player)
 
-    if q_agent_player == 'X':
+    if q_agent_player == "X":
         agent_x, agent_o = q_agent, opponent_agent
     else:
         agent_x, agent_o = opponent_agent, q_agent
 
-    for _ in tqdm(range(num_games), desc=f"Q-Agent({q_agent_player}) vs {opponent_name}({opponent_player})"):
+    for _ in tqdm(
+        range(num_games),
+        desc=f"Q-Agent({q_agent_player}) vs {opponent_name}({opponent_player})",
+    ):
         game = TicTacToe(agent_x=agent_x, agent_o=agent_o)
 
         while not game.game_over:
@@ -53,7 +63,7 @@ def evaluate(q_agent_player: str, opponent_class, opponent_name: str, num_games:
             if winner:
                 if winner == q_agent_player:
                     wins += 1
-                elif winner == 'draw':
+                elif winner == "draw":
                     draws += 1
                 else:
                     losses += 1
@@ -74,14 +84,14 @@ def main():
     print(f"総エピソード数: {args.num_games}回/対戦")
 
     print("\n\n--- Q-Agentが先手 ('X') の場合 ---")
-    evaluate('X', RandomAgent, "RandomAgent", args.num_games)
-    evaluate('X', MinimaxAgent, "MinimaxAgent", args.num_games)
-    evaluate('X', PerfectAgent, "PerfectAgent", args.num_games)
+    evaluate("X", RandomAgent, "RandomAgent", args.num_games)
+    evaluate("X", MinimaxAgent, "MinimaxAgent", args.num_games)
+    evaluate("X", PerfectAgent, "PerfectAgent", args.num_games)
 
     print("\n\n--- Q-Agentが後手 ('O') の場合 ---")
-    evaluate('O', RandomAgent, "RandomAgent", args.num_games)
-    evaluate('O', MinimaxAgent, "MinimaxAgent", args.num_games)
-    evaluate('O', PerfectAgent, "PerfectAgent", args.num_games)
+    evaluate("O", RandomAgent, "RandomAgent", args.num_games)
+    evaluate("O", MinimaxAgent, "MinimaxAgent", args.num_games)
+    evaluate("O", PerfectAgent, "PerfectAgent", args.num_games)
 
 
 if __name__ == "__main__":

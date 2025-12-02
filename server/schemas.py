@@ -3,9 +3,15 @@ from typing import List, Optional, Tuple, Literal
 
 
 class StartGameRequest(BaseModel):
-    human_player_symbol: Literal["X", "O"]  # CUIの人間プレイヤーのシンボル
-    player_x_type: str  # Xプレイヤーのタイプ (Human, Random, Minimax, QLearning, Perfect)
-    player_o_type: str  # Oプレイヤーのタイプ (Human, Random, Minimax, QLearning, Perfect)
+    human_player_symbol: Optional[Literal["X", "O"]] = (
+        None  # CUIの人間プレイヤーのシンボル
+    )
+    player_x_type: (
+        str  # Xプレイヤーのタイプ (Human, Random, Minimax, QLearning, Perfect)
+    )
+    player_o_type: (
+        str  # Oプレイヤーのタイプ (Human, Random, Minimax, QLearning, Perfect)
+    )
 
 
 class BoardState(BaseModel):
@@ -15,12 +21,12 @@ class BoardState(BaseModel):
     winner_line: Optional[Tuple[Tuple[int, int], Tuple[int, int], Tuple[int, int]]]
     game_over: bool
 
-    @field_validator('board', mode='after')
+    @field_validator("board", mode="after")
     @classmethod
     def check_board_row_length(cls, v: List[List[str]]):
         for row in v:
             if not (isinstance(row, list) and len(row) == 3):
-                raise ValueError('Each row of the board must have 3 elements')
+                raise ValueError("Each row of the board must have 3 elements")
         return v
 
 

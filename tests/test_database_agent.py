@@ -12,13 +12,15 @@ class TestDatabaseAgent(unittest.TestCase):
         self.cursor = self.conn.cursor()
 
         # テーブル作成
-        self.cursor.execute('''
+        self.cursor.execute(
+            """
             CREATE TABLE tictactoe (
                 board TEXT PRIMARY KEY,
                 best_move INTEGER,
                 result TEXT
             )
-        ''')
+        """
+        )
 
         # テスト用データを挿入
         self.test_data = {
@@ -30,10 +32,13 @@ class TestDatabaseAgent(unittest.TestCase):
         }
 
         for board, (best_move, result) in self.test_data.items():
-            self.cursor.execute('''
+            self.cursor.execute(
+                """
                 INSERT INTO tictactoe (board, best_move, result)
                 VALUES (?, ?, ?)
-            ''', (board, best_move, result))
+            """,
+                (board, best_move, result),
+            )
 
         self.conn.commit()
         self.agent = DatabaseAgent("X", self.test_db)
@@ -62,7 +67,10 @@ class TestDatabaseAgent(unittest.TestCase):
         """データベースに存在しない盤面ではランダムな手を返すか"""
         board = [["O", " ", " "], [" ", " ", " "], [" ", " ", " "]]
         move = self.agent.get_move(board)
-        self.assertIn(move, [(i, j) for i in range(3) for j in range(3) if not (i == 0 and j == 0)])
+        self.assertIn(
+            move,
+            [(i, j) for i in range(3) for j in range(3) if not (i == 0 and j == 0)],
+        )
 
     def test_board_to_string(self):
         """盤面が正しく文字列に変換されるか"""

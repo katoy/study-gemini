@@ -90,56 +90,56 @@ class TestCreateDatabase(unittest.TestCase):
         score = minimax(board, 0, False, "X")
         self.assertIsInstance(score, (int, float))
 
-    @patch('create_database.sqlite3')
+    @patch("create_database.sqlite3")
     def test_insert_to_db(self, mock_sqlite3):
         """データベースにデータを挿入できるか"""
         mock_cursor = MagicMock()
         insert_to_db(mock_cursor, "XO  X   O", 4, "continue")
         mock_cursor.execute.assert_called_once()
 
-    @patch('create_database.logging')
+    @patch("create_database.logging")
     def test_create_database_with_winner(self, mock_logging):
         """勝者がいる状態でcreate_databaseが正しく動作するか"""
         mock_cursor = MagicMock()
         board = [["X", "X", "X"], [" ", " ", " "], [" ", " ", " "]]
         seen = set()
         perfect_moves = {}
-        
+
         create_database(board, "X", mock_cursor, seen, perfect_moves)
-        
+
         self.assertIn("XXX      ", seen)
         self.assertEqual(perfect_moves["XXX      "], -1)
         mock_cursor.execute.assert_called()
 
-    @patch('create_database.logging')
+    @patch("create_database.logging")
     def test_create_database_with_draw(self, mock_logging):
         """引き分け状態でcreate_databaseが正しく動作するか"""
         mock_cursor = MagicMock()
         board = [["X", "O", "X"], ["X", "O", "O"], ["O", "X", "X"]]
         seen = set()
         perfect_moves = {}
-        
+
         create_database(board, "X", mock_cursor, seen, perfect_moves)
-        
+
         board_str = board_to_string(board)
         self.assertIn(board_str, seen)
         self.assertEqual(perfect_moves[board_str], -1)
 
-    @patch('create_database.logging')
+    @patch("create_database.logging")
     def test_create_database_ongoing_game(self, mock_logging):
         """進行中のゲームでcreate_databaseが最適手を計算するか"""
         mock_cursor = MagicMock()
         board = [[" ", " ", " "], [" ", " ", " "], [" ", " ", " "]]
         seen = set()
         perfect_moves = {}
-        
+
         create_database(board, "X", mock_cursor, seen, perfect_moves)
-        
+
         # 盤面が登録されたことを確認
         self.assertGreater(len(seen), 0)
         self.assertGreater(len(perfect_moves), 0)
 
-    @patch('create_database.logging')
+    @patch("create_database.logging")
     def test_create_database_skip_seen(self, mock_logging):
         """既に処理済みの盤面をスキップするか"""
         mock_cursor = MagicMock()
@@ -147,16 +147,16 @@ class TestCreateDatabase(unittest.TestCase):
         board_str = board_to_string(board)
         seen = {board_str}  # 既に処理済み
         perfect_moves = {}
-        
+
         create_database(board, "X", mock_cursor, seen, perfect_moves)
-        
+
         # データベースへの挿入が行われないことを確認
         mock_cursor.execute.assert_not_called()
 
-    @patch('create_database.json.dump')
-    @patch('create_database.sqlite3.connect')
-    @patch('builtins.print')
-    @patch('builtins.open', new_callable=mock_open)
+    @patch("create_database.json.dump")
+    @patch("create_database.sqlite3.connect")
+    @patch("builtins.print")
+    @patch("builtins.open", new_callable=mock_open)
     def test_main(self, mock_file, mock_print, mock_connect, mock_json_dump):
         """main関数が正しく実行されるか"""
         # モックの設定
@@ -164,23 +164,23 @@ class TestCreateDatabase(unittest.TestCase):
         mock_cursor = MagicMock()
         mock_connect.return_value = mock_conn
         mock_conn.cursor.return_value = mock_cursor
-        
+
         # main関数を実行
         main()
-        
+
         # データベース接続が行われたことを確認
         mock_connect.assert_called_once_with("tictactoe.db")
-        
+
         # テーブル作成が行われたことを確認（create_databaseで多数のexecuteが呼ばれる）
         self.assertGreater(mock_cursor.execute.call_count, 1)
-        
+
         # コミットとクローズが行われたことを確認
         mock_conn.commit.assert_called_once()
         mock_conn.close.assert_called_once()
-        
+
         # 成功メッセージが表示されたことを確認
         self.assertEqual(mock_print.call_count, 2)
-        
+
         # JSONファイルが保存されたことを確認
         mock_json_dump.assert_called_once()
 

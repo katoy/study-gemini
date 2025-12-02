@@ -27,7 +27,7 @@ def create_cui_image():
         "-------------------------",
         "",
         "Current Player: X",
-        "Enter your move (1-9): "
+        "Enter your move (1-9): ",
     ]
 
     # Calculate image size
@@ -56,8 +56,9 @@ def create_cui_image():
     # Add a "cursor" block at the end
 
     cursor_x = PADDING + draw.textlength(lines[-1], font=font)
-    draw.rectangle([(cursor_x, y - LINE_HEIGHT + 2),
-                    (cursor_x + 8, y - 2)], fill=TEXT_COLOR)
+    draw.rectangle(
+        [(cursor_x, y - LINE_HEIGHT + 2), (cursor_x + 8, y - 2)], fill=TEXT_COLOR
+    )
 
     output_path = os.path.join(IMAGES_DIR, "cui_screenshot.png")
     img.save(output_path)

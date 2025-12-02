@@ -48,7 +48,6 @@ class TestPerfectAgent(unittest.TestCase):
         # データに基づいた期待値に修正
         self.assertEqual(move, (0, 1))
 
-
     def test_get_move_not_in_perfect_moves(self):
         """辞書にないパターンの場合、KeyErrorを返すか"""
         # Oプレイヤーの視点で、invalid な盤面（XとOの数が合わない）
@@ -57,12 +56,10 @@ class TestPerfectAgent(unittest.TestCase):
         with self.assertRaises(KeyError):
             self.agent.get_move(board)
 
-
     def test_file_not_found(self):
         """perfect_moves.jsonが存在しない場合、FileNotFoundErrorが発生するか"""
         with self.assertRaises(FileNotFoundError):
             PerfectAgent("X", perfect_moves_file="nonexistent.json")
-
 
     def test_game_over_board(self):
         """ゲーム終了している盤面でKeyErrorが発生するか"""
@@ -88,6 +85,7 @@ class TestPerfectAgent(unittest.TestCase):
         self.assertEqual(self.agent.index_to_move(0), (0, 0))
         self.assertEqual(self.agent.index_to_move(4), (1, 1))
         self.assertEqual(self.agent.index_to_move(8), (2, 2))
+
 
 if __name__ == "__main__":
     unittest.main()

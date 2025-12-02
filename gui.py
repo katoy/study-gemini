@@ -6,12 +6,6 @@ from settings_ui import SettingsUI
 from board_drawer import BoardDrawer
 from game_info_ui import GameInfoUI
 
-from agents.random_agent import RandomAgent
-from agents.minimax_agent import MinimaxAgent
-from agents.database_agent import DatabaseAgent
-from agents.perfect_agent import PerfectAgent
-from agents.q_learning_agent import QLearningAgent
-
 
 class TicTacToeGUI:
     """
@@ -46,7 +40,9 @@ class TicTacToeGUI:
 
         # Settings to be saved (used on restart)
         self.selected_player = None  # True: Human select, False: Machine select
-        self.selected_agent = None  # "ランダム" or "Minimax" or "Database" or "QLearning"
+        self.selected_agent = (
+            None  # "ランダム" or "Minimax" or "Database" or "QLearning"
+        )
 
         self.settings_ui = SettingsUI(self, master)
         self.board_drawer = BoardDrawer(self, self.canvas)
@@ -77,7 +73,11 @@ class TicTacToeGUI:
             human_player_symbol = "O"
             agent_x_instance = self._create_agent_instance(self.selected_agent, "X")
 
-        self.game = TicTacToe(agent_x=agent_x_instance, agent_o=agent_o_instance, human_player=human_player_symbol)
+        self.game = TicTacToe(
+            agent_x=agent_x_instance,
+            agent_o=agent_o_instance,
+            human_player=human_player_symbol,
+        )
         self.board_drawer.draw_board()
         self.game_info_ui.show_game_info()
         self.board_drawer.remove_winner_highlight()
@@ -127,7 +127,9 @@ class TicTacToeGUI:
                     reward = 0
                 else:
                     reward = 0
-                self.game.agent.update_q_table(current_state, action, reward, next_state)
+                self.game.agent.update_q_table(
+                    current_state, action, reward, next_state
+                )
 
     def update_q_table_after_game(self):
         """ゲーム終了後にQテーブルを更新する"""
@@ -148,7 +150,9 @@ class TicTacToeGUI:
             if move is not None:
                 row, col = move
                 action = row * 3 + col
-                self.game.agent.update_q_table(current_state, action, reward, current_state)
+                self.game.agent.update_q_table(
+                    current_state, action, reward, current_state
+                )
 
     def agent_first_move(self):
         """Handles the agent's first move."""
@@ -229,14 +233,20 @@ class TicTacToeGUI:
         """
         Create an agent instance based on the agent name and player symbol.
         """
-        if agent_name == "ランダム":
-            return RandomAgent(player_symbol)
-        elif agent_name == "Minimax":
-            return MinimaxAgent(player_symbol)
-        elif agent_name == "Database":
-            return DatabaseAgent(player_symbol)
-        elif agent_name == "Perfect":
-            return PerfectAgent(player_symbol)
-        elif agent_name == "QLearning":
-            return QLearningAgent(player_symbol)
-        return None
+        agent_class = self.settings_ui.AGENT_CLASSES.get(agent_name)
+
+        if agent_class is None:
+            return None
+
+        # Define paths for agents that need them
+        PERFECT_MOVES_FILE = "perfect_moves.json"
+        Q_TABLE_PATH = "q_table.json"
+
+        agent_type_name = agent_class.__name__.replace("Agent", "")
+
+        if agent_type_name == "Perfect":
+            return agent_class(player_symbol, PERFECT_MOVES_FILE)
+        elif agent_type_name == "QLearning":
+            return agent_class(player_symbol, q_table_file=Q_TABLE_PATH)
+        else:
+            return agent_class(player_symbol)

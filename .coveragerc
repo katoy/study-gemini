@@ -1,22 +1,11 @@
 [run]
-source = .
-omit = 
-    tests/*
-    __pycache__/*
-    */__pycache__/*
-    .pytest_cache/*
-    htmlcov/*
-    setup.py
+source =
+    .
+    CUI
 
 [report]
 exclude_lines =
     pragma: no cover
-    def __repr__
-    raise AssertionError
-    raise NotImplementedError
     if __name__ == .__main__.:
-    if TYPE_CHECKING:
-    @abstractmethod
-
-[html]
-directory = htmlcov
+omit =
+    tests/*

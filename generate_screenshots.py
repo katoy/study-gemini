@@ -28,11 +28,17 @@ def draw_board(draw):
     # Draw grid lines
     for i in range(1, 3):
         # Vertical
-        draw.line([(i * CELL_SIZE, 0), (i * CELL_SIZE, CANVAS_SIZE)],
-                  fill=LINE_COLOR, width=LINE_WIDTH)
+        draw.line(
+            [(i * CELL_SIZE, 0), (i * CELL_SIZE, CANVAS_SIZE)],
+            fill=LINE_COLOR,
+            width=LINE_WIDTH,
+        )
         # Horizontal
-        draw.line([(0, i * CELL_SIZE), (CANVAS_SIZE, i * CELL_SIZE)],
-                  fill=LINE_COLOR, width=LINE_WIDTH)
+        draw.line(
+            [(0, i * CELL_SIZE), (CANVAS_SIZE, i * CELL_SIZE)],
+            fill=LINE_COLOR,
+            width=LINE_WIDTH,
+        )
 
 
 def draw_x(draw, row, col):
@@ -100,7 +106,9 @@ def generate_gameplay_screenshot():
     # For now, just the board is fine as per request "GUI app screenshots" usually implies the window,
     # but the board is the main part. Let's add a small title bar simulation.
 
-    window_img = Image.new("RGB", (320, 380), BG_COLOR)  # Extra height for title and label
+    window_img = Image.new(
+        "RGB", (320, 380), BG_COLOR
+    )  # Extra height for title and label
     draw_win = ImageDraw.Draw(window_img)
 
     # Title bar

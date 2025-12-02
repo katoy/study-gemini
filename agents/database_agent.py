@@ -34,7 +34,9 @@ class DatabaseAgent(BaseAgent):
                 return None
             return self.index_to_move(best_move)
         else:
-            logging.warning("🔍 データベースに盤面が見つかりません。ランダムな手を選びます。")
+            logging.warning(
+                "🔍 データベースに盤面が見つかりません。ランダムな手を選びます。"
+            )
             return self.get_random_move(board)
 
     def board_to_string(self, board: list) -> str:
@@ -45,10 +47,7 @@ class DatabaseAgent(BaseAgent):
 
     def get_random_move(self, board: list) -> tuple[int, int] | None:
         available_moves = [
-            (row, col)
-            for row in range(3)
-            for col in range(3)
-            if board[row][col] == " "
+            (row, col) for row in range(3) for col in range(3) if board[row][col] == " "
         ]
         return random.choice(available_moves) if available_moves else None
 

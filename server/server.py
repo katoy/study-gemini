@@ -1,7 +1,8 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from typing import Optional # Add this import
 from .schemas import StartGameRequest, BoardState, MoveRequest, AvailableAgentsResponse
-from .game_manager import game_manager
+from .game_manager import GameManager  # Import the class, not the instance
 
 PLAYER_X = "X"
 PLAYER_O = "O"
@@ -22,8 +23,20 @@ app.add_middleware(
 )
 
 
+# GameManagerのシングルトンインスタンスを保持
+_game_manager_instance: Optional[GameManager] = None
+
+def get_game_manager() -> GameManager:
+    global _game_manager_instance
+    if _game_manager_instance is None:
+        _game_manager_instance = GameManager()
+    return _game_manager_instance
+
+
 @app.post("/game/start", response_model=BoardState)
-async def start_game(request: StartGameRequest):
+async def start_game(
+    request: StartGameRequest, game_manager: GameManager = Depends(get_game_manager)
+):
     game_instance = game_manager.start_new_game(
         request.player_x_type, request.player_o_type, request.human_player_symbol
     )
@@ -32,18 +45,20 @@ async def start_game(request: StartGameRequest):
         current_player=game_instance.current_player,
         winner=game_instance.check_winner(),
         winner_line=game_instance.winner_line,
-        game_over=game_instance.game_over
+        game_over=game_instance.game_over,
     )
 
 
 @app.get("/game/status", response_model=BoardState)
-async def get_game_status():
+async def get_game_status(game_manager: GameManager = Depends(get_game_manager)):
     game_state = game_manager.get_current_game_state()
     return BoardState(**game_state)
 
 
 @app.post("/game/move", response_model=BoardState)
-async def make_move(move_request: MoveRequest):
+async def make_move(
+    move_request: MoveRequest, game_manager: GameManager = Depends(get_game_manager)
+):
     game_instance = game_manager.make_player_move(move_request.row, move_request.col)
     winner = game_instance.check_winner()
     return BoardState(
@@ -51,11 +66,11 @@ async def make_move(move_request: MoveRequest):
         current_player=game_instance.current_player,
         winner=winner,
         winner_line=game_instance.winner_line,
-        game_over=game_instance.game_over
+        game_over=game_instance.game_over,
     )
 
 
 @app.get("/agents", response_model=AvailableAgentsResponse)
-async def get_available_agents():
+async def get_available_agents(game_manager: GameManager = Depends(get_game_manager)):
     agents = game_manager.get_available_agents()
     return AvailableAgentsResponse(agents=agents)

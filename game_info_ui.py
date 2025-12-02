@@ -33,9 +33,7 @@ class GameInfoUI:
 
     def update_game_info(self):
         """Updates the game information labels."""
-        player_text = (
-            "先手: あなた" if self.gui.selected_player else "後手: あなた"
-        )
+        player_text = "先手: あなた" if self.gui.selected_player else "後手: あなた"
         agent_text = f"エージェント: {self.gui.selected_agent}"
         self.player_info_label.config(text=player_text)
         self.agent_info_label.config(text=agent_text)

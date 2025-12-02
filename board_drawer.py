@@ -11,12 +11,8 @@ class BoardDrawer:
     def create_board_lines(self):
         """Draws the lines of the board."""
         for i in range(1, 3):
-            self.canvas.create_line(
-                i * 100, 0, i * 100, 300, fill="white", width=3
-            )
-            self.canvas.create_line(
-                0, i * 100, 300, i * 100, fill="white", width=3
-            )
+            self.canvas.create_line(i * 100, 0, i * 100, 300, fill="white", width=3)
+            self.canvas.create_line(0, i * 100, 300, i * 100, fill="white", width=3)
 
     def draw_board(self):
         """Draws the current state of the board."""
