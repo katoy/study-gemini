@@ -12,12 +12,13 @@ class TicTacToeGUI:
     GUI class for the Tic Tac Toe game.
     """
 
-    def __init__(self, master):
+    def __init__(self, master, machine_first=False):
         """
         Initializes the TicTacToeGUI.
 
         Args:
             master (tk.Tk): The root window.
+            machine_first (bool): If True, the machine plays first.
         """
         self.master = master
         master.title("三目並べ")
@@ -50,6 +51,12 @@ class TicTacToeGUI:
         self.control_buttons_frame = None
         self.stop_button = None
         self.saved_settings = None
+
+        # Set initial value based on machine_first argument
+        if machine_first:
+            self.settings_ui.player_var.set(False)
+        else:
+            self.settings_ui.player_var.set(True)
 
         self.settings_ui.build_settings_ui()
 

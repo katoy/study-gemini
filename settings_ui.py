@@ -61,6 +61,7 @@ class SettingsUI:
             selectcolor="#555555",
             font=("Arial", 12, "bold"),
         )
+        self.player_second_radio.pack(side="left", padx=10)
 
         self.agent_frame = tk.LabelFrame(
             self.settings_frame,
