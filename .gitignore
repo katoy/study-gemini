@@ -75,3 +75,6 @@ coverage.xml
 .DS_Store
 
 !flutter/**/lib/
+
+# Application logs
+app.log
