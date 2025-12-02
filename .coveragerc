@@ -6,6 +6,6 @@ source =
 [report]
 exclude_lines =
     pragma: no cover
-    if __name__ == .__main__.:
+    if __name__ == "__main__":
 omit =
     tests/*

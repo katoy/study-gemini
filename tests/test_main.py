@@ -14,13 +14,21 @@ class TestMain(unittest.TestCase):
         # main.pyをインポート
         import main
 
-        # main関数を実行
-        main.main()
+        # sys.argvを一時的に変更して、argparseがpytestの引数を解釈しないようにする
+        original_argv = sys.argv
+        sys.argv = ["main.py"]
+
+        try:
+            # main関数を実行
+            main.main()
+        finally:
+            # sys.argvを元に戻す
+            sys.argv = original_argv
 
         # Tkインスタンスが作成されたことを確認
         mock_tk.assert_called_once()
         # GUIが作成されたことを確認
-        mock_gui.assert_called_once_with(mock_root)
+        mock_gui.assert_called_once_with(mock_root, machine_first=False)
         # mainloopが呼ばれたことを確認
         mock_root.mainloop.assert_called_once()
 
