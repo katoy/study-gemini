@@ -20,15 +20,16 @@
       - [Q学習エージェントの学習](#q学習エージェントの学習)
       - [Q学習エージェントの強さ評価](#q学習エージェントの強さ評価)
       - [モデル同士の性能比較](#モデル同士の性能比較)
+  - [ChatGPT AI の設定](#chatgpt-ai-の設定)
   - [開発者向け情報](#開発者向け情報)
     - [セットアップ](#セットアップ)
     - [テストの実行](#テストの実行)
     - [テストカバレッジの集計](#テストカバレッジの集計)
       - [コンソールでの確認](#コンソールでの確認)
       - [HTMLレポートの生成](#htmlレポートの生成)
-    - [Lintチェックの実行](#lintチェックの実行)
-    - [コード品質とカバレッジサマリー](#コード品質とカバレッジサマリー)
-
+          - [Lintチェックの実行](#lintチェックの実行)
+          - [コードフォーマットの実行](#コードフォーマットの実行)
+          - [コード品質とカバレッジサマリー](#コード品質とカバレッジサマリー)
 ## 主なファイルの説明
 
 *   `main.py`: アプリケーションのエントリーポイント。GUIを起動します。
@@ -50,6 +51,7 @@
 *   `random_agent.py`: ランダムに手を選択する最も基本的なエージェント。
 *   `minimax_agent.py`: ミニマックス法を用いて最適な手を探索するエージェント。
 *   `q_learning_agent.py`: Q学習によって学習したQテーブルを元に行動を決定するエージェント。
+*   `chatgpt_agent.py`: OpenAIのAPIを利用して次の一手を決定するエージェント。
 *   `perfect_agent.py`: `perfect_moves.json` または `tictactoe.db` にある必勝手のデータを元に行動するエージェント。
 *   `database_agent.py`: データベースに接続して手を決定するエージェントの基盤。
 
@@ -126,6 +128,20 @@ python verify_q_learning_strength.py --num_games 1000
 python evaluate_models.py --model1 q_table_A.json --model2 q_table_B.json --num_games 500
 ```
 
+## ChatGPT AI の設定
+
+`ChatGPTAgent`を使用するには、OpenAIのAPIキーが必要です。以下の環境変数を設定してください。
+
+```bash
+export OPENAI_API_KEY='your_openai_api_key'
+```
+
+または、プロジェクトのルートディレクトリに`.env`ファイルを作成し、そこにキーを記述することもできます。
+
+```.env
+OPENAI_API_KEY='your_openai_api_key'
+```
+
 ## 開発者向け情報
 
 ### セットアップ
@@ -176,6 +192,14 @@ open htmlcov/index.html
 ```bash
 # testファイルなどを除外してLintチェックを実行
 flake8 --exclude=tests,__pycache__,.pytest_cache,build,htmlcov,venv,.venv --max-line-length=120 --statistics --count .
+```
+
+### コードフォーマットの実行
+
+本プロジェクトでは、コードフォーマッターとして `black` を使用しています。以下のコマンドでコード全体をフォーマットできます。
+
+```bash
+black .
 ```
 
 ### コード品質とカバレッジサマリー
