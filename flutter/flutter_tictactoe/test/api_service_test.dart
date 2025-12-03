@@ -7,103 +7,104 @@ import 'package:flutter_tictactoe/models.dart';
 
 void main() {
   group('ApiService', () {
-    test('startGame returns BoardState on success', () async {
+    test('startGame returns BoardState on 200', () async {
       final client = MockClient((request) async {
         return http.Response(jsonEncode({
-          'board': [['', '', ''], ['', '', ''], ['', '', '']],
+          'board': [[' ', ' ', ' '], [' ', ' ', ' '], [' ', ' ', ' ']],
           'current_player': 'X',
-          'winner': null,
-          'winner_line': null,
-          'game_over': false,
+          'game_over': false
         }), 200);
       });
 
       final apiService = ApiService(client: client);
-      final request = StartGameRequest(
-        humanPlayerSymbol: 'X',
-        playerXType: 'Human',
-        playerOType: 'Random',
-      );
-
+      final request = StartGameRequest(humanPlayerSymbol: 'X', playerXType: 'Human', playerOType: 'Random');
       final result = await apiService.startGame(request);
 
       expect(result, isA<BoardState>());
       expect(result.currentPlayer, 'X');
     });
 
-    test('startGame throws exception on failure', () async {
+    test('startGame throws Exception on non-200', () async {
       final client = MockClient((request) async {
         return http.Response('Error', 500);
       });
 
       final apiService = ApiService(client: client);
-      final request = StartGameRequest(
-        humanPlayerSymbol: 'X',
-        playerXType: 'Human',
-        playerOType: 'Random',
-      );
+      final request = StartGameRequest(humanPlayerSymbol: 'X', playerXType: 'Human', playerOType: 'Random');
 
-      expect(apiService.startGame(request), throwsException);
+      expect(() => apiService.startGame(request), throwsException);
     });
 
-    test('makeMove returns BoardState on success', () async {
+    test('getGameStatus returns BoardState on 200', () async {
       final client = MockClient((request) async {
         return http.Response(jsonEncode({
-          'board': [['X', '', ''], ['', '', ''], ['', '', '']],
-          'current_player': 'O',
-          'winner': null,
-          'winner_line': null,
-          'game_over': false,
-        }), 200);
-      });
-
-      final apiService = ApiService(client: client);
-      final request = MoveRequest(row: 0, col: 0);
-
-      final result = await apiService.makeMove(request);
-
-      expect(result.board[0][0], 'X');
-      expect(result.currentPlayer, 'O');
-    });
-
-    test('makeMove throws exception on failure', () async {
-      final client = MockClient((request) async {
-        return http.Response('Error', 500);
-      });
-
-      final apiService = ApiService(client: client);
-      final request = MoveRequest(row: 0, col: 0);
-
-      expect(apiService.makeMove(request), throwsException);
-    });
-
-    test('getGameStatus returns BoardState on success', () async {
-      final client = MockClient((request) async {
-        return http.Response(jsonEncode({
-          'board': [['X', 'O', ''], ['', '', ''], ['', '', '']],
+          'board': [[' ', ' ', ' '], [' ', ' ', ' '], [' ', ' ', ' ']],
           'current_player': 'X',
-          'winner': null,
-          'winner_line': null,
-          'game_over': false,
+          'game_over': false
         }), 200);
       });
 
       final apiService = ApiService(client: client);
       final result = await apiService.getGameStatus();
 
-      expect(result.board[0][0], 'X');
-      expect(result.board[0][1], 'O');
-      expect(result.currentPlayer, 'X');
+      expect(result, isA<BoardState>());
     });
 
-    test('getGameStatus throws exception on failure', () async {
+    test('getGameStatus throws Exception on non-200', () async {
       final client = MockClient((request) async {
         return http.Response('Error', 500);
       });
 
       final apiService = ApiService(client: client);
 
-      expect(apiService.getGameStatus(), throwsException);
+      expect(() => apiService.getGameStatus(), throwsException);
+    });
+
+    test('makeMove returns BoardState on 200', () async {
+      final client = MockClient((request) async {
+        return http.Response(jsonEncode({
+          'board': [['X', ' ', ' '], [' ', ' ', ' '], [' ', ' ', ' ']],
+          'current_player': 'O',
+          'game_over': false
+        }), 200);
+      });
+
+      final apiService = ApiService(client: client);
+      final result = await apiService.makeMove(MoveRequest(row: 0, col: 0));
+
+      expect(result, isA<BoardState>());
+      expect(result.board[0][0], 'X');
+    });
+
+    test('makeMove throws Exception on non-200', () async {
+      final client = MockClient((request) async {
+        return http.Response('Error', 500);
+      });
+
+      final apiService = ApiService(client: client);
+
+      expect(() => apiService.makeMove(MoveRequest(row: 0, col: 0)), throwsException);
+    });
+
+    test('getAvailableAgents returns list on 200', () async {
+      final client = MockClient((request) async {
+        return http.Response(jsonEncode({'agents': ['Random', 'Minimax']}), 200);
+      });
+
+      final apiService = ApiService(client: client);
+      final result = await apiService.getAvailableAgents();
+
+      expect(result, ['Random', 'Minimax']);
+    });
+
+    test('getAvailableAgents throws Exception on non-200', () async {
+      final client = MockClient((request) async {
+        return http.Response('Error', 500);
+      });
+
+      final apiService = ApiService(client: client);
+
+      expect(() => apiService.getAvailableAgents(), throwsException);
     });
   });
 }

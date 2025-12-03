@@ -1,7 +1,7 @@
 from typing import Optional
 from fastapi import HTTPException
 from game_logic import TicTacToe
-from agent_discovery import get_agent_details
+from agent_discovery import get_agent_details, AGENT_ALIASES
 
 PLAYER_X = "X"
 PLAYER_O = "O"
@@ -33,6 +33,10 @@ class GameManager:
         return self.agent_display_names
 
     def _create_agent(self, agent_type: str, player_symbol: str):
+        # エイリアスがあれば解決する (例: "Random" -> "ランダム")
+        if agent_type in AGENT_ALIASES:
+            agent_type = AGENT_ALIASES[agent_type]
+
         agent_class = self.AGENT_CLASSES.get(agent_type)
 
         if agent_class is None:  # Humanの場合

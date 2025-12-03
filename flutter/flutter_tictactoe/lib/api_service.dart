@@ -45,4 +45,15 @@ class ApiService {
       throw Exception('Failed to make move: ${response.body}');
     }
   }
+
+  Future<List<String>> getAvailableAgents() async {
+    final response = await client.get(Uri.parse('$baseUrl/agents'));
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return List<String>.from(data['agents']);
+    } else {
+      throw Exception('Failed to get available agents: ${response.body}');
+    }
+  }
 }
