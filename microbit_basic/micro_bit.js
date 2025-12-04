@@ -1,32 +1,45 @@
-/**
- * @file micro_bit.js
- * @brief micro:bit Bluetooth UART通信サンプルスクリプト
- * @details
- *  - Bluetooth接続/切断時にアイコンを表示します。
- *  - Aボタンが押されたら"A"、Bボタンが押されたら"B"をUART経由で送信します。
- *  - 起動時にハートアイコンを表示します。
- * @author Gemini
- * @date 2025年12月4日木曜日
- */
-// Bluetooth接続/切断時にアイコンを表示
+bluetooth.startUartService()
+
+// ★ プログラム開始時にハートを表示
+basic.showIcon(IconNames.Heart)
+
+// ★ 接続したとき
 bluetooth.onBluetoothConnected(function () {
     basic.showIcon(IconNames.Yes)
 })
+
+// ★ 切断したとき
 bluetooth.onBluetoothDisconnected(function () {
     basic.showIcon(IconNames.No)
 })
-// Aボタンが押されたら "A" という文字列を送信
-input.onButtonPressed(Button.A, function () {
-    bluetooth.uartWriteString("A")
-    basic.showString("A")
-})
-// Bボタンが押されたら "B" という文字列を送信
-input.onButtonPressed(Button.B, function () {
-    bluetooth.uartWriteString("B")
-    basic.showString("B")
-})
-// Bluetooth UARTサービスを開始
-bluetooth.startUartService()
-// 起動時にハートアイコンを表示
-basic.showIcon(IconNames.Heart)
 
+// Aボタンが押されたら送信
+input.onButtonPressed(Button.A, function () {
+    // Mac に "A" を送る
+    bluetooth.uartWriteString("A\n")
+})
+
+// Bボタンが押されたら送信
+input.onButtonPressed(Button.B, function () {
+    // Mac に "B" を送る
+    bluetooth.uartWriteString("B\n")
+})
+
+// A+Bボタンが押されたら送信
+input.onButtonPressed(Button.AB, function () {
+    // Mac に "A+B" を送る
+    bluetooth.uartWriteString("A+B\n")
+})
+
+// Mac からのデータを受信したら
+bluetooth.onUartDataReceived(serial.delimiters(Delimiters.NewLine), function () {
+    const receivedString = bluetooth.uartReadUntil(
+        serial.delimiters(Delimiters.NewLine)
+    )
+    // ここで "a" / "b" / "c" が表示される
+    basic.showString(receivedString)
+})
+
+basic.forever(function () {
+    // 何もしないで待機
+})
