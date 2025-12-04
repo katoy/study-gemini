@@ -20,6 +20,13 @@ PFont japaneseFont; // 日本語フォント
 
 // --- UI要素 ---
 Button startButton;
+Button resetButton;
+Button stopButton;
+Button backToSettingsButton;
+Button rematchButton;
+String message = "";
+boolean gameStarted = false;
+boolean gameOver = false;
 DropDown playerXDropdown;
 DropDown playerODropdown;
 RadioButton radioX, radioO;
@@ -43,7 +50,10 @@ void setup() {
   }
   
   // --- UIの初期化 ---
-  startButton = new Button("ゲーム開始", 150, 450, 100, 40);
+  startButton = new Button("ゲーム開始", 150, 450, 100, 40, color(0));
+  stopButton = new Button("ゲーム中断", width - 110, height - 45, 100, 40, color(0));
+  backToSettingsButton = new Button("設定に戻る", width / 4 - 50, height - 50, 100, 40, color(0));
+  rematchButton = new Button("再戦", width * 3 / 4 - 50, height - 50, 100, 40, color(0));
   
   String[] agentOptions = availableAgents;
   playerXDropdown = new DropDown(50, 150, 150, 30, "Player X:", agentOptions);
@@ -89,6 +99,10 @@ void mousePressed() {
       radioX.isSelected = false;
     }
   } else if (gameState.equals("GAME")) {
+    if (stopButton.isClicked()) {
+      gameState = "SETTINGS";
+      return;
+    }
     // ボードクリック処理
     int col = floor(mouseX / (width / 3.0));
     int row = floor(mouseY / (width / 3.0));
@@ -100,10 +114,12 @@ void mousePressed() {
       thread("makeMove");
     }
   } else if (gameState.equals("GAME_OVER")) {
-      // 設定画面に戻るボタン (y=450 to 490)
-      if (mouseX > 100 && mouseX < 300 && mouseY > height - 50 && mouseY < height - 10) {
-          gameState = "SETTINGS";
-      }
+    if (backToSettingsButton.isClicked()) {
+      gameState = "SETTINGS";
+    }
+    if (rematchButton.isClicked()) {
+      thread("startGame");
+    }
   }
 }
 
@@ -132,6 +148,10 @@ void drawSettingsScreen() {
 }
 
 void drawGameScreen() {
+    background(240);
+    if (boardState != null && !boardState.getBoolean("game_over")) {
+        stopButton.draw();
+    }
     drawBoard(); // 1. ボードの線を描画
     if (boardState != null) {
         // ゲームオーバー状態なら、勝利ラインを先に描画
@@ -146,10 +166,17 @@ void drawGameScreen() {
             drawGameOver();
         } else {
             textFont(japaneseFont);
-            textSize(20);
+            textSize(16); // 少しフォントを小さくする
             textAlign(CENTER, CENTER);
             fill(0);
-            text("現在のプレイヤー: " + boardState.getString("current_player"), width / 2, width + 25);
+
+            // エージェント表示
+            String agentInfo = "X: " + playerXType + "  vs  O: " + playerOType;
+            text(agentInfo, width / 2, width + 20);
+
+            // 現在のプレイヤー表示
+            textSize(20);
+            text("現在のプレイヤー: " + boardState.getString("current_player"), width / 2, width + 45);
         }
     }
 }
@@ -220,19 +247,17 @@ void drawGameOver() {
     fill(255, 0, 0);
     textAlign(CENTER, CENTER);
     String winner = boardState.getString("winner");
-    if (winner != null && !winner.equals("null")) {
-        text(winner + " の勝ち！", width / 2, width + 20); // y=420
+    if (winner != null && winner.equals("draw")) {
+        text("引き分け！", width/2, width + 20); // 引き分けの場合
+    } else if (winner != null && !winner.equals("null")) {
+        text(winner + " の勝ち！", width / 2, width + 20); // X か O の勝ち
     } else {
-        text("引き分け！", width/2, width + 20); // y=420
+        text("引き分け！", width/2, width + 20); // Fallback (念のため)
     }
     
-    // 設定画面に戻るボタン
-    fill(0, 100, 200);
-    rect(100, height - 50, 200, 40); // y=450, height=40
-    fill(255);
-    textFont(japaneseFont); // フォント適用
-    textSize(20);
-    text("設定に戻る", width/2, height - 30); // y=470
+    // ボタンの描画
+    backToSettingsButton.draw();
+    rematchButton.draw();
 }
 
 
@@ -325,14 +350,32 @@ String readResponse(HttpURLConnection conn) throws Exception {
 class Button {
   String label;
   float x, y, w, h;
+  color strokeColor;
+
+  // デフォルトコンストラクタ（黒枠）
   Button(String label, float x, float y, float w, float h) {
     this.label = label;
     this.x = x; this.y = y; this.w = w; this.h = h;
+    this.strokeColor = color(0); // デフォルトは黒
+  }
+
+  // カスタム枠色コンストラクタ
+  Button(String label, float x, float y, float w, float h, color strokeCol) {
+    this.label = label;
+    this.x = x; this.y = y; this.w = w; this.h = h;
+    this.strokeColor = strokeCol;
   }
   
   void draw() {
+    stroke(this.strokeColor); // 枠色を使用
+    strokeWeight(1); // 枠線の太さは一定にする
     fill(200);
     rect(x, y, w, h);
+    
+    // 他の要素の描画に影響を与えないように、ストロークをデフォルトに戻す
+    stroke(0); 
+    strokeWeight(1);
+
     fill(0);
     textAlign(CENTER, CENTER);
     textFont(japaneseFont, 16); // フォント適用
