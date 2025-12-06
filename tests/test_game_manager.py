@@ -92,6 +92,17 @@ def test_create_agent_perfect(gm_instance):
     assert isinstance(agent, PerfectAgent)
 
 
+def test_create_agent_with_alias(gm_instance):
+    """
+    Test that GameManager can create an agent using its alias (e.g., "Random").
+    """
+    # "Random" should be mapped to "ランダム" and create a RandomAgent
+    agent = gm_instance._create_agent("Random", "O")
+
+    assert agent is not None
+    assert agent.__class__.__name__ == "RandomAgent"
+
+
 def test_create_agent_qlearning_file_not_found(gm_instance):
     """Test QLearning agent creation fails if q_table.json is not found"""
     original_q_learning_class = gm_instance.AGENT_CLASSES.get("QLearning")
@@ -148,3 +159,59 @@ def test_make_agent_move_if_needed_no_game(gm_instance):
     gm_instance._make_agent_move_if_needed()  # Should simply return, no error.
     # Assert that no exceptions were raised and no game methods were called
     assert gm_instance.game is None  # Still None
+
+
+def test_execute_move_invalid_raises_value_error(gm_instance):
+    """Test that execute_move raises ValueError for an invalid move."""
+    game = gm_instance.create_game_instance("Human", "Human", "X")
+    game = gm_instance.execute_move(game, 0, 0)  # Valid move
+    with pytest.raises(ValueError, match="Invalid move"):
+        gm_instance.execute_move(game, 0, 0)  # Invalid move
+
+
+def test_run_ai_move_handles_agent_exception(gm_instance):
+    """Test that run_ai_move handles exceptions from agent.get_move."""
+    mock_agent = MagicMock()
+    # Test with both KeyError and IndexError
+    for error in [KeyError, IndexError]:
+        mock_agent.get_move.side_effect = error
+        game = TicTacToe(agent_x=mock_agent, agent_o=None, human_player="O")
+        game.current_player = "X"
+
+        # Patch check_winner to see if it's called
+        with patch.object(game, "check_winner", wraps=game.check_winner) as mock_check_winner:
+            returned_game = gm_instance.run_ai_move(game)
+            assert returned_game is game
+            mock_check_winner.assert_called_once()
+
+
+def test_run_ai_move_no_move_returned(gm_instance):
+    """Test run_ai_move when the agent returns no move."""
+    mock_agent = MagicMock()
+    mock_agent.get_move.return_value = None
+    game = TicTacToe(agent_x=mock_agent, agent_o=None, human_player="O")
+    game.current_player = "X"
+
+    with patch.object(game, "check_winner", wraps=game.check_winner) as mock_check_winner:
+        returned_game = gm_instance.run_ai_move(game)
+        assert returned_game is game
+        mock_check_winner.assert_called_once()
+
+
+def test_make_player_move_on_ai_turn_valid_move(gm_instance):
+    """Test making a valid player move even when it is the AI's turn."""
+    # O is human, X is agent. Agent X moves first.
+    game = gm_instance.start_new_game("Minimax", "Human", "O")
+
+    # Pre-condition: It should be O's (human) turn. Let's force it to be X's turn.
+    # The first move by Minimax is (0, 0).
+    assert game.board[0][0] == "X"
+    game.current_player = "X"
+
+    # Human 'O' makes a valid move at (1, 1), even though it's X's turn.
+    # The server logic allows this. The move is made by the current_player, which is 'X'.
+    moved_game = gm_instance.make_player_move(1, 1)
+
+    # The move should be accepted. The board at (1,1) is now 'X'.
+    assert moved_game.board[1][1] == "X"
+    assert gm_instance.game is not None

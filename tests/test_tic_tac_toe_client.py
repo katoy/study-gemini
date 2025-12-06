@@ -81,6 +81,14 @@ def test_send_request_connection_error(mock_post, client):
     mock_post.assert_called_once()
 
 
+@patch("requests.post")
+def test_send_request_unexpected_request_exception(mock_post, client):
+    """Test that _send_request handles generic RequestException"""
+    mock_post.side_effect = requests.exceptions.RequestException("Unexpected error")
+    with pytest.raises(requests.exceptions.RequestException, match="Unexpected error"):
+        client._send_request("POST", "test")
+
+
 # --- get_player_symbol_choice tests ---
 
 
@@ -100,6 +108,21 @@ def test_get_player_symbol_choice_multiple_invalid(mock_print, mock_input, clien
     assert client.get_player_symbol_choice() == "X"
     assert mock_input.call_count == 3
     mock_print.assert_any_call("Invalid choice. Please enter 'X' or 'O'.")
+
+
+# --- get_available_agents tests ---
+@patch.object(TicTacToeClient, "_send_request", side_effect=requests.exceptions.RequestException)
+@patch("builtins.print")
+def test_get_available_agents_request_exception_fallback(mock_print, mock_send_request, client):
+    """Test get_available_agents uses fallback list on RequestException."""
+    client.available_agents = None # Clear cache
+    agents = client.get_available_agents()
+    assert mock_send_request.called
+    assert "Human" in agents
+    assert "Random" in agents
+    # Check that cache is populated
+    assert client.available_agents is not None
+    mock_print.assert_any_call("Warning: Could not fetch agent list from server. Using fallback list.")
 
 
 # --- get_agent_type_choice tests ---
@@ -132,6 +155,33 @@ def test_get_agent_type_choice_invalid_then_valid(
     # 2番目の要素は "Database"
     assert result == "Database"
     assert mock_print.call_count >= 2  # 少なくとも2回のエラーメッセージ
+
+
+@patch.object(TicTacToeClient, "get_available_agents", return_value=[])
+@patch("builtins.print")
+def test_get_agent_type_choice_no_agents_available(mock_print, mock_get_available_agents, client):
+    """Test get_agent_type_choice returns 'Human' if no agents are available."""
+    agent_type = client.get_agent_type_choice("X")
+    assert agent_type == "Human"
+    mock_print.assert_any_call("Error: No agents available.")
+
+
+@patch.object(
+    TicTacToeClient,
+    "get_available_agents",
+    return_value=["Human", "Minimax"],
+)
+@patch("builtins.input", side_effect=["0", "invalid", "10", "1"])  # Too low, not a number, too high, valid
+@patch("builtins.print")
+def test_get_agent_type_choice_invalid_inputs(
+    mock_print, mock_input, mock_get_available_agents, client
+):
+    """Test get_agent_type_choice handles various invalid inputs."""
+    agent_type = client.get_agent_type_choice("O")
+    assert agent_type == "Human" # First valid choice after invalid
+    assert mock_print.call_count == 15
+    mock_print.assert_any_call("Invalid number. Please enter a number between 1 and 2.")
+    mock_print.assert_any_call("Invalid input. Please enter a number.")
 
 
 # --- get_user_move tests ---
@@ -339,7 +389,7 @@ def test_play_single_game_agent_turn_and_request_error(
             "game_over": False,
         },  # Start game (1)
         # Agent's turn, status GET fails
-        requests.exceptions.RequestException,
+        requests.exceptions.RequestException("Agent turn status error"),
     ]
 
     with patch.object(TicTacToeClient, "get_user_move"):

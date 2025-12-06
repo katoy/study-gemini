@@ -21,6 +21,7 @@ class TicTacToe:
         self.agent_player = "O" if human_player == "X" else "X"
         # "X" always goes first.
         self.current_player = "X"
+        self.winner = None
         self.winner_line = None
         self.game_over = False
 
@@ -47,38 +48,53 @@ class TicTacToe:
             return True
         return False
 
+    @staticmethod
+    def _check_winner_logic(board):
+        """
+        Check if a player has won or if the game is a draw, without side effects.
+
+        Args:
+            board (list[list[str]]): The game board.
+
+        Returns:
+            tuple(str or None, tuple or None): A tuple containing the winner ('X', 'O', 'draw')
+                                                and the winning line coordinates, or (None, None).
+        """
+        # Check rows and columns
+        for i in range(3):
+            if board[i][0] == board[i][1] == board[i][2] != " ":
+                return board[i][0], ((i, 0), (i, 1), (i, 2))
+            if board[0][i] == board[1][i] == board[2][i] != " ":
+                return board[0][i], ((0, i), (1, i), (2, i))
+        # Check diagonals
+        if board[0][0] == board[1][1] == board[2][2] != " ":
+            return board[0][0], ((0, 0), (1, 1), (2, 2))
+        if board[0][2] == board[1][1] == board[2][0] != " ":
+            return board[0][2], ((0, 2), (1, 1), (2, 0))
+
+        # Check for draw
+        if all(cell != " " for row in board for cell in row):
+            return "draw", None
+
+        return None, None
+
     def check_winner(self):
         """
-        Check if a player has won or if the game is a draw.
+        Check if a player has won or if the game is a draw and updates instance state.
 
         Returns:
             str: "X" or "O" if a player wins, "draw" if board is full,
                 or None if the game continues.
         """
-        # Check rows and columns
-        for i in range(3):
-            if self.board[i][0] == self.board[i][1] == self.board[i][2] != " ":
-                self.winner_line = ((i, 0), (i, 1), (i, 2))  # All 3 cells
-                self.game_over = True
-                return self.board[i][0]
-            if self.board[0][i] == self.board[1][i] == self.board[2][i] != " ":
-                self.winner_line = ((0, i), (1, i), (2, i))  # All 3 cells
-                self.game_over = True
-                return self.board[0][i]
-        # Check diagonals
-        if self.board[0][0] == self.board[1][1] == self.board[2][2] != " ":
-            self.winner_line = ((0, 0), (1, 1), (2, 2))  # All 3 cells
+        if self.winner: # Already decided
+            return self.winner
+
+        winner, winner_line = self._check_winner_logic(self.board)
+        if winner:
+            self.winner = winner
+            self.winner_line = winner_line
             self.game_over = True
-            return self.board[0][0]
-        if self.board[0][2] == self.board[1][1] == self.board[2][0] != " ":
-            self.winner_line = ((0, 2), (1, 1), (2, 0))  # All 3 cells
-            self.game_over = True
-            return self.board[0][2]
-        # Check for draw
-        if self._is_board_full():
-            self.game_over = True
-            return "draw"
-        return None
+        return self.winner
 
     def _is_board_full(self) -> bool:
         """

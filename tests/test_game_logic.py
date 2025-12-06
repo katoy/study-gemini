@@ -62,3 +62,68 @@ def test_get_current_agent_o_player(mock_game):
     mock_game.current_player = "O"
     current_agent = mock_game.get_current_agent()
     assert current_agent is mock_game.agent_o
+
+
+def test_switch_player(game):
+    """プレイヤーの切り替えを確認"""
+    assert game.current_player == "X"
+    game.switch_player()
+    assert game.current_player == "O"
+    game.switch_player()
+    assert game.current_player == "X"
+
+
+def test_check_winner_row(game):
+    """行での勝利を確認"""
+    game.board = [["X", "X", "X"], [" ", " ", " "], [" ", " ", " "]]
+    winner = game.check_winner()
+    assert winner == "X"
+    assert game.game_over
+    assert game.winner_line == ((0, 0), (0, 1), (0, 2))
+
+
+def test_check_winner_col(game):
+    """列での勝利を確認"""
+    game.board = [["O", " ", " "], ["O", " ", " "], ["O", " ", " "]]
+    winner = game.check_winner()
+    assert winner == "O"
+    assert game.game_over
+    assert game.winner_line == ((0, 0), (1, 0), (2, 0))
+
+
+def test_check_winner_diagonal_main(game):
+    """左上から右下への対角線の勝利を確認"""
+    game.board = [["X", " ", " "], [" ", "X", " "], [" ", " ", "X"]]
+    winner = game.check_winner()
+    assert winner == "X"
+    assert game.game_over
+    assert game.winner_line == ((0, 0), (1, 1), (2, 2))
+
+
+def test_check_winner_draw(game):
+    """引き分けを確認"""
+    game.board = [["X", "O", "X"], ["X", "O", "O"], ["O", "X", "X"]]
+    winner = game.check_winner()
+    assert winner == "draw"
+    assert game.game_over
+    assert game.winner_line is None
+
+
+def test_check_winner_already_decided(game):
+    """勝敗決定後に再度 check_winner を呼ぶケースを確認"""
+    game.board = [["X", "X", "X"], [" ", " ", " "], [" ", " ", " "]]
+    first_winner = game.check_winner()
+    assert first_winner == "X"
+
+    # ボードを変更しても結果は変わらないはず
+    game.board[1][0] = "O"
+    second_winner = game.check_winner()
+    assert second_winner == "X"
+    assert game.winner == "X"  # 状態も変わらない
+
+
+def test_is_board_full(game):
+    """_is_board_full の動作を確認"""
+    assert not game._is_board_full()
+    game.board = [["X", "O", "X"], ["X", "O", "O"], ["O", "X", "X"]]
+    assert game._is_board_full()
