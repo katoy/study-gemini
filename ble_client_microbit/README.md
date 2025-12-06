@@ -7,6 +7,7 @@ micro:bit を使って、Mac 上の Python サーバーと通信して遊ぶ三�
 - [BLE Tic-Tac-Toe Client for micro:bit](#ble-tic-tac-toe-client-for-microbit)
   - [目次 (Table of Contents)](#目次-table-of-contents)
   - [概要](#概要)
+  - [デモ動画](#デモ動画)
   - [必要なもの](#必要なもの)
   - [インストール方法](#インストール方法)
   - [遊び方](#遊び方)
@@ -16,6 +17,7 @@ micro:bit を使って、Mac 上の Python サーバーと通信して遊ぶ三�
     - [4. 結果表示](#4-結果表示)
     - [5. リセット](#5-リセット)
   - [サーバー側の準備](#サーバー側の準備)
+  - [開発ツール](#開発ツール)
 
 ## 概要
 
@@ -93,9 +95,15 @@ micro:bit の電源を入れると、Bluetooth サービスが開始され、❤
 ## サーバー側の準備
 
 このクライアントを使用するには、Mac 上で Python サーバーを実行する必要があります。
+サーバーは `bleak` ライブラリを使用して Bluetooth 通信を行います。
 
 ```bash
 # プロジェクトのルートディレクトリで実行
+
+# 依存ライブラリのインストール
+pip install bleak
+
+# サーバーの起動
 python ble_server/main.py
 ```
 
@@ -106,3 +114,12 @@ python ble_server/main.py
 # Minimax (強い AI) と対戦する場合
 python ble_server/main.py --agent Minimax
 ```
+
+## 開発ツール
+
+`dev_tools` ディレクトリには、以下の開発用スクリプトが含まれています。
+
+- `convert_webp.py`: WebP 動画を MP4 に変換するスクリプト (ImageMagick/ffmpeg 使用)
+- `game_progression_video_maker.html`: デモ動画作成用のシミュレーション HTML
+- `simulation.html`, `demo_game.html`: プロトタイプ HTML
+
