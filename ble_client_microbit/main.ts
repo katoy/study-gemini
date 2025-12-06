@@ -1,109 +1,127 @@
 /**
- * BLE Tic-Tac-Toe Client for micro:bit
+ * BLE Tic-Tac-Toe Client for micro:bit (Stateless Protocol)
  */
 
+// --- Global State ---
 let connected = false
-let boardStr = "........."
+let boardStr = "........." // Always holds the current board state
 let cursorIndex = 0
-let myTurn = false
-let gameResult = ""
-let isSelectingMode = true // Start in selection mode
-let isWaitingForResponse = false
-let myPlayerSymbol = "X" // Default X, updated on start
+let myPlayerSymbol = "X"   // "X" or "O"
+let gameResult = ""        // "ONGOING", "WIN", "LOSE", "DRAW"
+let isSelectingMode = true // True when showing the initial player selection menu
+let isWaitingForResponse = false // Lock input while waiting for server
 
 // --- Initial Setup ---
 bluetooth.startUartService()
 basic.showIcon(IconNames.Heart)
 
-// --- Bluetooth Events ---
+// --- Bluetooth Event Handlers ---
+
 bluetooth.onBluetoothConnected(function () {
     connected = true
+    isSelectingMode = true
+    gameResult = ""
+    boardStr = "........."
+    myPlayerSymbol = "X"
     basic.showIcon(IconNames.Yes)
     pause(1000)
-    // Show Selection Menu immediately after connection
     showSelectionMenu()
 })
 
 bluetooth.onBluetoothDisconnected(function () {
     connected = false
+    isWaitingForResponse = false
     basic.showIcon(IconNames.No)
 })
 
-// Handle incoming data
+// Handle all incoming data from the server
 bluetooth.onUartDataReceived(serial.delimiters(Delimiters.NewLine), function () {
-    let receivedLine = bluetooth.uartReadUntil(serial.delimiters(Delimiters.NewLine))
-    // Protocol:
-    // BOARD:xxxxxxxxx
-    // RESULT:WIN/LOSE/DRAW
-    // RESET
+    if (!connected) return
 
-    if (receivedLine.includes("BOARD:")) {
-        boardStr = receivedLine.substr(6, 9)
-        // Switch to Game Mode if receiving board
-        if (isSelectingMode) {
-            isSelectingMode = false
-        }
+    let receivedLine = bluetooth.uartReadUntil(serial.delimiters(Delimiters.NewLine)).trim()
+    if (receivedLine == "") return
 
-        isWaitingForResponse = false // Response received
+    if (receivedLine.substr(0, 7) == "RESULT:") {
+        // This is the second message in a game-over sequence
+        // Format: RESULT:<GAME_RESULT>:<WIN_LINE>
+        let parts = receivedLine.substr(7).split(":")
+        if (parts.length < 1) return
 
-        // If current cursor is on an occupied cell, move to the first empty one
-        if (boardStr.charAt(cursorIndex) != ".") {
-            for (let i = 0; i < 9; i++) {
-                if (boardStr.charAt(i) == ".") {
-                    cursorIndex = i
-                    break
-                }
-            }
-        }
-        renderBoard()
-    } else if (receivedLine.includes("RESULT:")) {
-        isWaitingForResponse = false // Response received
-        // Format: RESULT:STATUS:1,2,3 or RESULT:STATUS
-        let parts = receivedLine.split(":")
-        gameResult = parts[1] // WIN, LOSE, DRAW
+        gameResult = parts[0]
 
-        let blinkIndices: number[] = []
-        if (parts.length > 2) {
-            let indiciesStr = parts[2].split(",")
+        // Handle Game Over display logic
+        let winLineStr = (parts.length > 1) ? parts[1] : ""
+        if (winLineStr != "") {
+            let blinkIndices: number[] = []
+            let indiciesStr = winLineStr.split(",")
             for (let s of indiciesStr) {
                 blinkIndices.push(parseInt(s))
             }
+            if (blinkIndices.length > 0) {
+                // Blink the winning line
+                blinkWinnerLine(blinkIndices)
+                // Show the final board with the line for a moment
+                renderBoard()
+                for (let idx of blinkIndices) {
+                    let mark = boardStr.charAt(idx)
+                    led.plotBrightness((idx % 3) + 1, Math.floor(idx / 3) + 1, mark == "X" ? 255 : 50)
+                }
+                pause(1500)
+            }
+        }
+        showResult() // Then show result icon (Happy, Sad, etc.)
+
+    } else {
+        // This is a standard board update
+        // Format: <BOARD_STATE>:<GAME_RESULT>:<WIN_LINE>
+        let parts = receivedLine.split(":")
+        if (parts.length < 2) return
+
+        // 1. Update Board State
+        boardStr = parts[0]
+        // 2. Update Game Result (will be "ONGOING" unless it's a direct start->gameover)
+        gameResult = parts[1]
+
+        // We are no longer waiting for a response for our move
+        isWaitingForResponse = false
+        if (isSelectingMode) {
+            isSelectingMode = false // First response from server, switch to game mode
         }
 
-        if (blinkIndices.length > 0) {
-            blinkWinnerLine(blinkIndices)
-        }
+        renderBoard()
 
-        showResult()
-    } else if (receivedLine.includes("RESET")) {
-        // Back to selection mode
-        boardStr = "........."
-        gameResult = ""
-        isSelectingMode = true
-        showSelectionMenu()
+        // If the game is ongoing, find the next available spot for the cursor
+        if (gameResult == "ONGOING") {
+            if (boardStr.charAt(cursorIndex) != ".") {
+                for (let i = 0; i < 9; i++) {
+                    if (boardStr.charAt(i) == ".") {
+                        cursorIndex = i
+                        break
+                    }
+                }
+            }
+            renderBoard()
+        }
     }
 })
 
+
 // --- Control Logic ---
 
-// Button A
+// Button A: Move cursor / Select Player 1 (X)
 input.onButtonPressed(Button.A, function () {
-    if (!connected) return
+    if (!connected || isWaitingForResponse) return
 
     if (isSelectingMode) {
-        // Select P1 (First)
-        bluetooth.uartWriteString("START_P1\n")
-        basic.showString("1")
+        // Select Player 1 (X, goes first)
         myPlayerSymbol = "X"
-        isSelectingMode = false // Wait for Board
-    } else if (gameResult != "") {
-        // Ignore A in Result screen? Or let it do nothing.
+        isWaitingForResponse = true
+        bluetooth.uartWriteString("START:" + myPlayerSymbol + "\n")
+        basic.showString("1")
+    } else if (gameResult != "" && gameResult != "ONGOING") {
+        // In result screen, do nothing
     } else {
-        // Game Mode: Move Cursor
-        if (isWaitingForResponse) return // Lock input while waiting
-
-        // Skip occupied cells and find the next empty one
-        let originalIndex = cursorIndex
+        // Game Mode: Move Cursor to the next empty spot
         for (let i = 0; i < 9; i++) {
             cursorIndex = (cursorIndex + 1) % 9
             if (boardStr.charAt(cursorIndex) == ".") {
@@ -114,113 +132,98 @@ input.onButtonPressed(Button.A, function () {
     }
 })
 
-// Button B
+// Button B: Confirm move / Select Player 2 (O) / Reset
 input.onButtonPressed(Button.B, function () {
-    if (!connected) return
+    if (!connected || isWaitingForResponse) return
 
     if (isSelectingMode) {
-        // Select P2 (Second)
-        bluetooth.uartWriteString("START_P2\n")
-        basic.showString("2")
+        // Select Player 2 (O, goes second)
         myPlayerSymbol = "O"
-        isSelectingMode = false // Wait for Board
+        isWaitingForResponse = true
+        bluetooth.uartWriteString("START:" + myPlayerSymbol + "\n")
+        basic.showString("2")
         return
     }
 
-    if (gameResult != "") {
-        // Reset game
-        bluetooth.uartWriteString("RESET\n")
+    if (gameResult != "" && gameResult != "ONGOING") {
+        // Game is over, B acts as Reset
+        resetGame()
         return
     }
 
-    // Game Mode: Select / Confirm
-    if (isWaitingForResponse) return // Lock input while waiting
+    // Game Mode: Confirm move
+    if (boardStr.charAt(cursorIndex) == ".") {
+        isWaitingForResponse = true
+        
+        // Feedback: Show selection
+        let x = (cursorIndex % 3) + 1
+        let y = Math.floor(cursorIndex / 3) + 1
+        led.plotBrightness(x, y, myPlayerSymbol == "X" ? 255 : 50)
+        pause(200)
 
-    isWaitingForResponse = true
-
-    // Feedback: Blink strongly at selection to indicate confirmation
-    let x = (cursorIndex % 3) + 1
-    let y = Math.floor(cursorIndex / 3) + 1
-
-    let brightness = (myPlayerSymbol == "X") ? 255 : 50
-
-    led.plotBrightness(x, y, brightness)
-    pause(100)
-    led.plotBrightness(x, y, 0)
-    pause(100)
-    led.plotBrightness(x, y, brightness) // Leave it ON
-
-    // Send Move: MOVE:N
-    bluetooth.uartWriteString("MOVE:" + cursorIndex + "\n")
+        // Send Move Command: MOVE:<INDEX>:<SYMBOL>:<BOARD>
+        let command = "MOVE:" + cursorIndex + ":" + myPlayerSymbol + ":" + boardStr + "\n"
+        bluetooth.uartWriteString(command)
+    }
 })
 
 // Button A+B: Force Reset
 input.onButtonPressed(Button.AB, function () {
     if (!connected) return
-    bluetooth.uartWriteString("RESET\n")
+    resetGame()
 })
+
+function resetGame() {
+    isWaitingForResponse = false
+    isSelectingMode = true
+    gameResult = ""
+    boardStr = "........."
+    showSelectionMenu()
+}
+
 
 // --- Display Logic ---
 
 function showSelectionMenu() {
+    basic.clearScreen()
     basic.showString("?")
-    // ideally show "A=1 B=2" scrolling
 }
 
-// 5x5 Matrix
-// 0,0  1,0  2,0  3,0  4,0
-// 0,1  [1,1][2,1][3,1] 4,1
-// 0,2  [1,2][2,2][3,2] 4,2
-// 0,3  [1,3][2,3][3,3] 4,3
-// 0,4  1,4  2,4  3,4  4,4
-// Board is in center 3x3 (offset x=1, y=1)
-
+// Renders the board based on the global 'boardStr'
 function renderBoard() {
     if (isSelectingMode) return
-
     basic.clearScreen()
     for (let i = 0; i < 9; i++) {
         let mark = boardStr.charAt(i)
         let x = (i % 3) + 1
         let y = Math.floor(i / 3) + 1
 
-        // Draw Mark
         if (mark == "X") {
             led.plotBrightness(x, y, 255) // Bright
         } else if (mark == "O") {
-            led.plotBrightness(x, y, 50)  // Dim (to distinguish)
-        } else {
-            // Empty
-            led.plotBrightness(x, y, 0)
+            led.plotBrightness(x, y, 50)  // Dim
         }
     }
 }
 
+// Blinks the winning line
 function blinkWinnerLine(indices: number[]) {
-    // Blink 3 times (approx 2 seconds total)
     for (let k = 0; k < 4; k++) {
         // OFF
         for (let idx of indices) {
-            let x = (idx % 3) + 1
-            let y = Math.floor(idx / 3) + 1
-            led.plotBrightness(x, y, 0)
+            led.plotBrightness((idx % 3) + 1, Math.floor(idx / 3) + 1, 0)
         }
         pause(250)
-
         // ON
         for (let idx of indices) {
-            let x = (idx % 3) + 1
-            let y = Math.floor(idx / 3) + 1
-            // Use existing board char to determine brightness
             let mark = boardStr.charAt(idx)
-            let brightness = 255
-            if (mark == "O") brightness = 50
-            led.plotBrightness(x, y, brightness)
+            led.plotBrightness((idx % 3) + 1, Math.floor(idx / 3) + 1, mark == "X" ? 255 : 50)
         }
         pause(250)
     }
 }
 
+// Shows the final result icon
 function showResult() {
     basic.clearScreen()
     if (gameResult == "WIN") {
@@ -228,7 +231,7 @@ function showResult() {
     } else if (gameResult == "LOSE") {
         basic.showIcon(IconNames.Sad)
     } else if (gameResult == "DRAW") {
-        basic.showIcon(IconNames.Confused)
+        basic.showIcon(IconNames.Asleep)
     }
     pause(2000)
     basic.showString("B=RST")
@@ -236,23 +239,14 @@ function showResult() {
 
 // Background loop for cursor blinking
 basic.forever(function () {
-    if (!connected || isSelectingMode || gameResult != "") return;
-
-    let x = (cursorIndex % 3) + 1
-    let y = Math.floor(cursorIndex / 3) + 1
-
-    // Simple blink for current cursor logic
+    // Blink cursor only in game mode and if the spot is empty
+    if (!connected || isSelectingMode || isWaitingForResponse || gameResult != "ONGOING") return
+    
     if (boardStr.charAt(cursorIndex) == ".") {
-        led.plotBrightness(x, y, 150)
-        pause(200)
-        led.plotBrightness(x, y, 0)
-        pause(200)
-    } else {
-        // If cursor is on occupied cell (shouldn't happen with skip logic, but for safety)
-        let currentBright = (boardStr.charAt(cursorIndex) == "X") ? 255 : 50
-        led.plotBrightness(x, y, 0)
-        pause(100)
-        led.plotBrightness(x, y, currentBright)
+        let x = (cursorIndex % 3) + 1
+        let y = Math.floor(cursorIndex / 3) + 1
+        // Toggle LED
+        led.toggle(x, y)
         pause(300)
     }
 })
