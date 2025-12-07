@@ -1,10 +1,11 @@
 // rust/tic_tac_toe_server_rust/src/schemas.rs
 
 use serde::{Deserialize, Serialize};
-use validator::Validate; // MoveRequest のために残す
+use validator::Validate;
 use crate::game_logic::Player;
+use utoipa::ToSchema;
 
-#[derive(Debug, Serialize, Deserialize, Clone)] // Validate derive マクロを削除
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct StartGameRequest {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub human_player_symbol: Option<Player>,
@@ -12,10 +13,10 @@ pub struct StartGameRequest {
     pub player_o_type: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)] // Validate derive マクロを削除
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct BoardState {
-    #[serde(with = "crate::schemas::board_serializer")] // Boardのシリアライズ/デシリアライズをカスタム
-    pub board: [[Player; 3]; 3], // Boardを直接使用
+    #[serde(with = "crate::schemas::board_serializer")]
+    pub board: [[Player; 3]; 3],
     pub current_player: Player,
     pub winner: Option<Player>,
     pub winner_line: Option<[(usize, usize); 3]>,
@@ -57,7 +58,7 @@ pub mod board_serializer {
 }
 
 
-#[derive(Debug, Serialize, Deserialize, Validate)] // Validate derive マクロは残す
+#[derive(Debug, Serialize, Deserialize, Validate, ToSchema)]
 pub struct MoveRequest {
     #[validate(range(min = 0, max = 2))]
     pub row: usize,
@@ -65,12 +66,12 @@ pub struct MoveRequest {
     pub col: usize,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct AvailableAgentsResponse {
     pub agents: Vec<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct ErrorResponse {
     pub detail: String,
 }

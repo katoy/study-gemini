@@ -47,8 +47,8 @@ impl HumanAgent {
 
 #[async_trait]
 impl Agent for HumanAgent {
-    fn get_player(&self) -> Player {
-        self.player.clone()
+    fn get_player(&self) -> Player { // Player は Copy なので clone 不要
+        self.player
     }
     async fn get_move(&self, _board: &Board) -> Result<Option<Move>> {
         Ok(None)
@@ -76,16 +76,16 @@ impl RandomAgent {
 
 #[async_trait]
 impl Agent for RandomAgent {
-    fn get_player(&self) -> Player {
-        self.player.clone()
+    fn get_player(&self) -> Player { // Player は Copy なので clone 不要
+        self.player
     }
 
     async fn get_move(&self, board: &Board) -> Result<Option<Move>> {
         let mut available_moves = Vec::new();
-        for r in 0..3 {
-            for c in 0..3 {
-                if board[r][c] == Player::None {
-                    available_moves.push((r, c));
+        for (r, row) in board.iter().enumerate() { // enumerate を使用
+            for (c, &cell) in row.iter().enumerate() { // enumerate を使用
+                if cell == Player::None {
+                    available_moves.push((r, c)); // 修正
                 }
             }
         }

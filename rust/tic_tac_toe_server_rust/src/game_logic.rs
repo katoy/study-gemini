@@ -1,10 +1,12 @@
 // rust/tic_tac_toe_server_rust/src/game_logic.rs
 
 use std::fmt;
+use std::str::FromStr; // 追加
 use serde::{Deserialize, Serialize};
 use crate::agents; // 追加
+use utoipa::ToSchema; // 追加
 
-#[derive(Debug, Clone, Copy, PartialEq)] // Serialize, Deserialize を削除
+#[derive(Debug, Clone, Copy, PartialEq, ToSchema)] // ToSchema を追加
 pub enum Player {
     X,
     O,
@@ -31,7 +33,7 @@ impl<'de> Deserialize<'de> for Player {
         D: serde::Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
-        Player::from_str(&s).ok_or_else(|| serde::de::Error::custom(format!("Invalid player string: {}", s)))
+        s.parse().map_err(serde::de::Error::custom)
     }
 }
 
@@ -45,16 +47,20 @@ impl fmt::Display for Player {
     }
 }
 
-impl Player {
-    pub fn from_str(s: &str) -> Option<Self> {
+impl FromStr for Player {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "X" => Some(Player::X),
-            "O" => Some(Player::O),
-            " " | "." | "" => Some(Player::None), // 空のセル表現は複数ありうる
-            _ => None,
+            "X" => Ok(Player::X),
+            "O" => Ok(Player::O),
+            " " | "." | "" => Ok(Player::None),
+            _ => Err(format!("Invalid player string: {}", s)),
         }
     }
+}
 
+impl Player {
     pub fn opponent(&self) -> Player {
         match self {
             Player::X => Player::O,
@@ -208,10 +214,10 @@ impl TicTacToe {
         moves
     }
 
-    pub fn get_current_agent(&self) -> Option<&Box<dyn agents::Agent + Send + Sync>> {
+    pub fn get_current_agent(&self) -> Option<&(dyn agents::Agent + Send + Sync)> {
         match self.current_player {
-            Player::X => self.agent_x.as_ref(),
-            Player::O => self.agent_o.as_ref(),
+            Player::X => self.agent_x.as_deref(),
+            Player::O => self.agent_o.as_deref(),
             Player::None => None,
         }
     }

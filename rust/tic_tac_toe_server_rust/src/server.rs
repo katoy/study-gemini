@@ -2,16 +2,42 @@
 
 use actix_web::{web, HttpResponse};
 // use actix_cors::Cors; // main.rs に移動
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use log::{error, info}; // info を追加
 use anyhow::Result;
-// use async_trait::async_trait; // 削除
+use utoipa::OpenApi; // 追加
 
 use crate::game_logic::{TicTacToe, Player};
 use crate::schemas::{StartGameRequest, BoardState, MoveRequest, AvailableAgentsResponse, ErrorResponse};
-use crate::agents::{Agent, RandomAgent}; // HumanAgent, RandomAgent のみ
-use crate::agents; // 追加
+use crate::agents::{Agent, RandomAgent};
+use crate::agents;
 
+// API定義
+#[derive(OpenApi)]
+#[openapi(
+    paths(
+        start_game_handler,
+        get_game_status_handler,
+        make_move_handler,
+        get_available_agents_handler,
+    ),
+    components(
+        schemas(
+            StartGameRequest,
+            BoardState,
+            MoveRequest,
+            AvailableAgentsResponse,
+            ErrorResponse,
+            Player // Enumもスキーマとして認識させる
+        )
+    ),
+    tags(
+        (name = "Tic Tac Toe", description = "三目並べゲームのAPI")
+    )
+)]
+pub struct ApiDoc;
+
+type AgentFactory = Box<dyn Fn(Player, Option<&str>) -> Result<Option<Box<dyn agents::Agent + Send + Sync>>> + Send + Sync>;
 
 // GameManager の定義
 pub struct GameManager {
@@ -19,13 +45,13 @@ pub struct GameManager {
     agent_display_names: Vec<String>,
     // エージェントのインスタンスを保持するための HashMap
     // キー: エージェント名, 値: Box<dyn Agent> (トレイトオブジェクト)
-    agent_factories: std::collections::HashMap<String, Box<dyn Fn(Player, Option<&str>) -> Result<Option<Box<dyn agents::Agent + Send + Sync>>> + Send + Sync>>,
+    agent_factories: std::collections::HashMap<String, AgentFactory>,
 }
 
 impl GameManager {
     pub fn new() -> Self {
         let mut agent_display_names = Vec::new();
-        let mut agent_factories: std::collections::HashMap<String, Box<dyn Fn(Player, Option<&str>) -> Result<Option<Box<dyn agents::Agent + Send + Sync>>> + Send + Sync>> = std::collections::HashMap::new();
+        let mut agent_factories: std::collections::HashMap<String, AgentFactory> = std::collections::HashMap::new();
 
         // HumanAgent を手動で追加
         agent_display_names.push("Human".to_string());
@@ -149,17 +175,40 @@ impl GameManager {
     }
 }
 
+impl Default for GameManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 // Global GameManager instance is removed.
 
 // DI 用の GameManager getter is removed.
 
 // エンドポイントハンドラ
+#[utoipa::path(
+    post,
+    path = "/start_game",
+    request_body = StartGameRequest,
+    responses(
+        (status = 200, description = "新しいゲームが開始されました", body = BoardState),
+        (status = 500, description = "ゲームの開始に失敗しました", body = ErrorResponse)
+    ),
+    tag = "Tic Tac Toe"
+)]
 pub async fn start_game_handler(
     req: web::Json<StartGameRequest>,
-    game_manager_data: web::Data<Arc<Mutex<GameManager>>>,
+    game_manager_data: web::Data<Arc<tokio::sync::Mutex<GameManager>>>,
 ) -> HttpResponse {
-    let mut game_manager = game_manager_data.lock().unwrap();
-    match (&mut *game_manager).start_new_game(req.into_inner()).await { // デリファレンスしてメソッドを呼び出す
+    let request = req.into_inner(); // まずリクエストデータを取得
+
+    let game_result = { // MutexGuard のスコープを限定
+        let mut gm_locked = game_manager_data.lock().await;
+        // start_new_game は &mut self を取るので、gm_locked を直接使う
+        gm_locked.start_new_game(request).await // この await の前に gm_locked がドロップされる必要がある
+    }; // ここで gm_locked がドロップされる
+
+    match game_result { // デリファレンスしてメソッドを呼び出す
         Ok(game) => HttpResponse::Ok().json(BoardState {
             board: game.board,
             current_player: game.current_player,
@@ -169,36 +218,65 @@ pub async fn start_game_handler(
         }),
         Err(e) => {
             error!("Failed to start new game: {}", e);
-            HttpResponse::InternalServerError().json(format!("Error: {}", e))
+            HttpResponse::InternalServerError().json(ErrorResponse { detail: format!("Error: {}", e) })
         },
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/game_status",
+    responses(
+        (status = 200, description = "現在のゲームの状態を取得", body = BoardState),
+        (status = 404, description = "ゲームが開始されていません", body = ErrorResponse)
+    ),
+    tag = "Tic Tac Toe"
+)]
 pub async fn get_game_status_handler(
-    game_manager_data: web::Data<Arc<Mutex<GameManager>>>,
+    game_manager_data: web::Data<Arc<tokio::sync::Mutex<GameManager>>>,
 ) -> HttpResponse {
-    let game_manager = game_manager_data.lock().unwrap();
-    match (&*game_manager).get_current_game_state() { // デリファレンスしてメソッドを呼び出す
+    let game_manager = game_manager_data.lock().await;
+    match game_manager.get_current_game_state() { // デリファレンスしてメソッドを呼び出す
         Ok(board_state) => HttpResponse::Ok().json(board_state),
         Err(e) => {
             error!("Failed to get game status: {}", e);
-            HttpResponse::NotFound().json(format!("Error: {}", e))
+            HttpResponse::NotFound().json(ErrorResponse { detail: format!("Error: {}", e) })
         },
     }
 }
 
+#[utoipa::path(
+    post,
+    path = "/make_move",
+    request_body = MoveRequest,
+    responses(
+        (status = 200, description = "移動が正常に実行され、最新のゲーム状態が返されました", body = BoardState),
+        (status = 400, description = "不正な移動です", body = ErrorResponse),
+        (status = 500, description = "サーバーエラー", body = ErrorResponse)
+    ),
+    tag = "Tic Tac Toe"
+)]
 pub async fn make_move_handler(
     req: web::Json<MoveRequest>,
-    game_manager_data: web::Data<Arc<Mutex<GameManager>>>,
+    game_manager_data: web::Data<Arc<tokio::sync::Mutex<GameManager>>>,
 ) -> HttpResponse {
-    let mut game_manager = game_manager_data.lock().unwrap();
-    match game_manager.make_player_move(req.row, req.col).await {
+    let (row, col) = (req.row, req.col);
+
+    let make_move_result = { // MutexGuard のスコープを限定
+        let mut gm_locked = game_manager_data.lock().await;
+        gm_locked.make_player_move(row, col).await
+    }; // ここで gm_locked がドロップされる
+
+    match make_move_result {
         Ok(_) => {
-            // AIの手を動かす
-            game_manager._make_agent_move_if_needed().await;
-            // AIが動いた後の最新の状態を取得する
-            match game_manager.get_current_game_state() {
-                Ok(board_state) => HttpResponse::Ok().json(board_state),
+            let board_state = { // MutexGuard のスコープを再度限定
+                let mut gm_locked_after_move = game_manager_data.lock().await;
+                gm_locked_after_move._make_agent_move_if_needed().await;
+                gm_locked_after_move.get_current_game_state().map_err(|e| anyhow::anyhow!("{}", e))
+            }; // ここで gm_locked_after_move がドロップされる
+
+            match board_state {
+                Ok(bs) => HttpResponse::Ok().json(bs),
                 Err(e) => {
                     error!("Failed to get game status after AI move: {}", e);
                     HttpResponse::InternalServerError().json(format!("Error: {}", e))
@@ -214,11 +292,19 @@ pub async fn make_move_handler(
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/available_agents",
+    responses(
+        (status = 200, description = "利用可能なエージェントのリスト", body = AvailableAgentsResponse)
+    ),
+    tag = "Tic Tac Toe"
+)]
 pub async fn get_available_agents_handler(
-    game_manager_data: web::Data<Arc<Mutex<GameManager>>>,
+    game_manager_data: web::Data<Arc<tokio::sync::Mutex<GameManager>>>,
 ) -> HttpResponse {
-    let game_manager = game_manager_data.lock().unwrap();
-    let agents = (&*game_manager).get_available_agents(); // デリファレンスしてメソッドを呼び出す
+    let game_manager = game_manager_data.lock().await;
+    let agents = game_manager.get_available_agents();
     HttpResponse::Ok().json(AvailableAgentsResponse { agents })
 }
 

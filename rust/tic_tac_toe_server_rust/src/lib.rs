@@ -5,12 +5,19 @@ pub mod schemas;
 pub mod agents;
 pub mod server;
 
-use actix_web::{dev::Server, web, App, HttpServer};
+use actix_web::{dev::Server, web, App, HttpServer, HttpResponse};
 use actix_cors::Cors;
 use env_logger::{Builder, Target};
 use log::LevelFilter;
-use std::net::{SocketAddr, TcpListener};
-use std::sync::{Arc, Mutex};
+use std::net::{SocketAddr, TcpListener}; // SocketAddr, TcpListener は std::net のまま
+use std::sync::Arc; // Arc は std::sync のまま
+use utoipa::OpenApi; // 追加
+use utoipa_swagger_ui::SwaggerUi; // 追加
+
+// 新しいハンドラ関数
+pub async fn get_openapi_json(openapi: web::Data<Arc<utoipa::openapi::OpenApi>>) -> HttpResponse {
+    HttpResponse::Ok().json(openapi.as_ref().clone())
+}
 
 /// Configures the Actix-web application services and routes.
 pub fn configure_app(cfg: &mut web::ServiceConfig) {
@@ -28,13 +35,36 @@ pub fn bootstrap() -> std::io::Result<(Server, SocketAddr)> {
 
     log::info!("Starting Actix-web server on http://{}", addr);
 
-    let game_manager_arc = Arc::new(Mutex::new(server::GameManager::new())); // GameManager を一度だけ作成
+    let game_manager_arc = Arc::new(tokio::sync::Mutex::new(server::GameManager::new())); // GameManager を一度だけ作成
+
+    // OpenAPIドキュメントを生成
+    let openapi_doc = server::ApiDoc::openapi(); // ApiDoc から OpenApi インスタンスを生成
+
+    // OpenAPIドキュメントをopenapi.jsonファイルとして保存
+    let openapi_json = openapi_doc.to_json().map_err(|e| {
+        std::io::Error::other(format!("Failed to serialize OpenAPI spec to JSON: {}", e))
+    })?;
+    std::fs::write("openapi.json", openapi_json).map_err(|e| {
+        std::io::Error::other(format!("Failed to write openapi.json: {}", e))
+    })?;
+    log::info!("OpenAPI specification written to openapi.json");
+
+    let openapi_doc_arc = Arc::new(openapi_doc); // Arc でラップ
 
     let server = HttpServer::new(move || {
         App::new()
             .wrap(Cors::permissive())
             .app_data(web::Data::new(game_manager_arc.clone()))
+            .app_data(web::Data::new(openapi_doc_arc.clone())) // OpenAPIドキュメントをアプリケーションデータとして登録
             .configure(configure_app)
+            // OpenAPIドキュメントのエンドポイントを追加
+            .service(
+                SwaggerUi::new("/swagger-ui/{tail:.*}")
+                    .url("/api-docs/openapi.json", openapi_doc_arc.as_ref().clone()) // Arc の中身をクローン
+            )
+            .service(web::scope("/api-docs")
+                .route("/openapi.json", web::get().to(get_openapi_json)) // 新しいハンドラを登録
+            )
     })
     .listen(listener)?
     .run();
@@ -64,12 +94,12 @@ mod tests {
     use super::*;
     use actix_web::{test, web, App};
     use crate::schemas::AvailableAgentsResponse;
-    use std::sync::{Arc, Mutex};
+    use std::sync::Arc; // Mutex は tokio::sync::Mutex を使用
 
     #[actix_web::test]
     async fn test_app_configuration() {
         // GIVEN: A test app with a GameManager instance, configured with our app's logic
-        let game_manager = web::Data::new(Arc::new(Mutex::new(server::GameManager::new())));
+        let game_manager = web::Data::new(Arc::new(tokio::sync::Mutex::new(server::GameManager::new())));
         let app = test::init_service(
             App::new()
                 .app_data(game_manager.clone())

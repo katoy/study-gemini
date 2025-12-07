@@ -1,6 +1,6 @@
 
 use actix_web::{test, App, web};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use tic_tac_toe_server_rust::{
     game_logic::Player,
     schemas::{StartGameRequest, MoveRequest, BoardState, AvailableAgentsResponse},
@@ -10,7 +10,7 @@ use tic_tac_toe_server_rust::{
 
 #[actix_web::test]
 async fn test_get_available_agents() {
-    let game_manager = web::Data::new(Arc::new(Mutex::new(server::GameManager::new())));
+    let game_manager = web::Data::new(Arc::new(tokio::sync::Mutex::new(server::GameManager::new())));
     let app = test::init_service(
         App::new()
             .app_data(game_manager.clone())
@@ -25,7 +25,7 @@ async fn test_get_available_agents() {
 
 #[actix_web::test]
 async fn test_game_flow() {
-    let game_manager = web::Data::new(Arc::new(Mutex::new(server::GameManager::new())));
+    let game_manager = web::Data::new(Arc::new(tokio::sync::Mutex::new(server::GameManager::new())));
     let app = test::init_service(
         App::new()
             .app_data(game_manager.clone())
@@ -80,7 +80,7 @@ async fn test_game_flow() {
 
 #[actix_web::test]
 async fn test_ai_game_flow() {
-    let game_manager = web::Data::new(Arc::new(Mutex::new(server::GameManager::new())));
+    let game_manager = web::Data::new(Arc::new(tokio::sync::Mutex::new(server::GameManager::new())));
     let app = test::init_service(
         App::new()
             .app_data(game_manager.clone())
@@ -123,7 +123,7 @@ async fn test_ai_game_flow() {
 
 #[actix_web::test]
 async fn test_start_game_handler_error_invalid_agent_type() {
-    let game_manager = web::Data::new(Arc::new(Mutex::new(server::GameManager::new())));
+    let game_manager = web::Data::new(Arc::new(tokio::sync::Mutex::new(server::GameManager::new())));
     let app = test::init_service(
         App::new()
             .app_data(game_manager.clone())
@@ -143,12 +143,12 @@ async fn test_start_game_handler_error_invalid_agent_type() {
 
     assert_eq!(resp.status(), 500); // Internal Server Error
     let body = test::read_body(resp).await;
-    assert!(String::from_utf8_lossy(&body).contains("Unknown agent type: UnknownAgent"));
+    assert!(String::from_utf8_lossy(&body).contains(r#"detail":"Error: Unknown agent type: UnknownAgent"#));
 }
 
 #[actix_web::test]
 async fn test_get_game_status_handler_error_no_game() {
-    let game_manager = web::Data::new(Arc::new(Mutex::new(server::GameManager::new())));
+    let game_manager = web::Data::new(Arc::new(tokio::sync::Mutex::new(server::GameManager::new())));
     let app = test::init_service(
         App::new()
             .app_data(game_manager.clone())
@@ -159,13 +159,13 @@ async fn test_get_game_status_handler_error_no_game() {
     let resp = test::call_service(&app, req).await;
 
     assert_eq!(resp.status(), 404); // Not Found
-    let body = test::read_body(resp).await;
-    assert!(String::from_utf8_lossy(&body).contains("Game not started"));
+    let body = test::read_body(resp).await; // この行を追加
+    assert!(String::from_utf8_lossy(&body).contains(r#"detail":"Error: Game not started"#));
 }
 
 #[actix_web::test]
 async fn test_make_move_handler_error_no_game() {
-    let game_manager = web::Data::new(Arc::new(Mutex::new(server::GameManager::new())));
+    let game_manager = web::Data::new(Arc::new(tokio::sync::Mutex::new(server::GameManager::new())));
     let app = test::init_service(
         App::new()
             .app_data(game_manager.clone())
@@ -181,5 +181,5 @@ async fn test_make_move_handler_error_no_game() {
 
     assert_eq!(resp.status(), 400); // Bad Request
     let body = test::read_body(resp).await;
-    assert!(String::from_utf8_lossy(&body).contains("Game not started"));
+    assert!(String::from_utf8_lossy(&body).contains(r#"detail":"Game not started"#));
 }

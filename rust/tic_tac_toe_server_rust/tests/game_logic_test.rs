@@ -3,17 +3,18 @@
 #![allow(unused_imports)] // Move と WinnerLine の unused import 警告を無視
 
 use tic_tac_toe_server_rust::game_logic::{Player, TicTacToe, Board, Move, WinnerLine};
+use std::str::FromStr; // 追加
 use tic_tac_toe_server_rust::agents::{self, Agent}; // Agentトレイトのbox_cloneを使うため
 
 // Player enum のテスト
 #[test]
 fn test_player_from_str() {
-    assert_eq!(Player::from_str("X"), Some(Player::X));
-    assert_eq!(Player::from_str("O"), Some(Player::O));
-    assert_eq!(Player::from_str(" "), Some(Player::None));
-    assert_eq!(Player::from_str("."), Some(Player::None));
-    assert_eq!(Player::from_str(""), Some(Player::None));
-    assert_eq!(Player::from_str("Z"), None);
+    assert_eq!("X".parse::<Player>().ok(), Some(Player::X));
+    assert_eq!("O".parse::<Player>().ok(), Some(Player::O));
+    assert_eq!(" ".parse::<Player>().ok(), Some(Player::None));
+    assert_eq!(".".parse::<Player>().ok(), Some(Player::None));
+    assert_eq!("".parse::<Player>().ok(), Some(Player::None));
+    assert_eq!("Z".parse::<Player>().ok(), None);
 }
 
 #[test]
@@ -325,7 +326,7 @@ fn test_check_winner_logic_column_o() {
 
 #[test]
 fn test_player_from_str_invalid() {
-    assert_eq!(Player::from_str("INVALID"), None);
+    assert_eq!("INVALID".parse::<Player>().ok(), None);
 }
 
 #[test]
