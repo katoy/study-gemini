@@ -78,3 +78,6 @@ coverage.xml
 
 # Application logs
 app.log
+
+# Rust
+target/

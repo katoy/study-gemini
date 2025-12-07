@@ -1,0 +1,25 @@
+[package]
+name = "tic_tac_toe_server_rust"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+actix-web = "4"
+actix-cors = "0.6" # CORSミドルウェア
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+anyhow = "1.0" # エラーハンドリング
+async-trait = "0.1" # トレイトオブジェクトのasyncメソッド用
+lazy_static = "1.4" # グローバル静的変数用
+log = "0.4" # ロギングファサード
+env_logger = "0.11" # ロギング実装
+rand = "0.8" # ランダムエージェント用
+reqwest = { version = "0.11", features = ["json"] } # ChatGPTAgent用
+regex = "1" # ChatGPTAgent用
+validator = { version = "0.18", features = ["derive"] } # スキーマバリデーション用 (MoveRequestのみ)
+tokio = { version = "1", features = ["full"] } # 非同期ランタイム
+# rusqlite = "0.28" # DatabaseAgent用 (今はダミーなのでコメントアウト)
+
+[dev-dependencies]
+reqwest = { version = "0.11", features = ["json"] }
+tokio = { version = "1", features = ["full"] }
