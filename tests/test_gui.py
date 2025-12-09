@@ -108,6 +108,7 @@ def test_start_game_ai_starts(gui):
     gui.mock_game.make_move.return_value = True  # AIの手が有効
     gui.mock_game.current_player = "X"  # AIのターン
     gui.mock_game.agent_player = "X"  # AIのプレイヤーシンボル
+    gui.mock_game.check_winner.return_value = None  # 勝者がいないことをモック
 
     gui.mock_board_drawer.draw_board.reset_mock()  # start_game内のdraw_board呼び出しをリセット
 

@@ -1,6 +1,7 @@
 import sqlite3
 import random
 import logging
+from typing import List, Tuple, Optional
 
 from agents.base_agent import BaseAgent
 
@@ -18,7 +19,7 @@ class DatabaseAgent(BaseAgent):
         self.conn = sqlite3.connect(database_file)
         self.cursor = self.conn.cursor()
 
-    def get_move(self, board: list) -> tuple[int, int] | None:
+    def get_move(self, board: List[List[str]]) -> Optional[Tuple[int, int]]:
         """
         盤面に応じたベストムーブを取得。なければランダム。
         """
@@ -39,13 +40,13 @@ class DatabaseAgent(BaseAgent):
             )
             return self.get_random_move(board)
 
-    def board_to_string(self, board: list) -> str:
+    def board_to_string(self, board: List[List[str]]) -> str:
         return "".join(cell if cell != " " else " " for row in board for cell in row)
 
-    def index_to_move(self, index: int) -> tuple[int, int]:
+    def index_to_move(self, index: int) -> Tuple[int, int]:
         return index // 3, index % 3
 
-    def get_random_move(self, board: list) -> tuple[int, int] | None:
+    def get_random_move(self, board: List[List[str]]) -> Optional[Tuple[int, int]]:
         available_moves = [
             (row, col) for row in range(3) for col in range(3) if board[row][col] == " "
         ]
