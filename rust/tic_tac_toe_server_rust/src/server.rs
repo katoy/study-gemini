@@ -187,7 +187,7 @@ impl GameManager {
             game_over: game.game_over,
         })
     }
-}
+} // GameManager impl の閉じ括弧を追加
 
 impl Default for GameManager {
     fn default() -> Self {
@@ -195,11 +195,8 @@ impl Default for GameManager {
     }
 }
 
-// Global GameManager instance is removed.
-
-// DI 用の GameManager getter is removed.
-
 // エンドポイントハンドラ
+
 #[utoipa::path(
     post,
     path = "/game/start",

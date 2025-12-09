@@ -53,7 +53,7 @@ pub fn bootstrap(port: u16) -> std::io::Result<(Server, SocketAddr)> {
 
     if let Err(e) = write_openapi_file(&openapi_doc, "openapi.json") {
         log::error!("Failed to write openapi.json: {}", e);
-        return Err(std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to write openapi.json: {}", e)));
+        return Err(std::io::Error::other(format!("Failed to write openapi.json: {}", e)));
     }
     log::info!("OpenAPI specification written to openapi.json");
 
