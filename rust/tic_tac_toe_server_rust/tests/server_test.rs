@@ -185,3 +185,49 @@ async fn test_make_move_handler_error_no_game() {
     let body: HTTPValidationError = test::read_body_json(resp).await;
     assert!(body.detail[0].msg.contains("Game not started"));
 }
+
+#[actix_web::test]
+async fn test_make_move_handler_error_invalid_move() {
+    let game_manager = web::Data::new(Arc::new(
+        tokio::sync::Mutex::new(server::GameManager::new()),
+    ));
+    let app = test::init_service(
+        App::new()
+            .app_data(game_manager.clone())
+            .configure(configure_app),
+    )
+    .await;
+
+    // Start a game
+    let start_req = StartGameRequest {
+        human_player_symbol: Some(Player::X),
+        player_x_type: "Human".to_string(),
+        player_o_type: "Human".to_string(),
+    };
+    let req = test::TestRequest::post()
+        .uri("/game/start")
+        .set_json(&start_req)
+        .to_request();
+    let _ = test::call_service(&app, req).await;
+
+    // Move 1: X to (0, 0)
+    let move_req = MoveRequest { row: 0, col: 0 };
+    let req = test::TestRequest::post()
+        .uri("/game/move")
+        .set_json(&move_req)
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert!(resp.status().is_success());
+
+    // Move 2: O to (0, 0) -> Should fail
+    let move_req = MoveRequest { row: 0, col: 0 };
+    let req = test::TestRequest::post()
+        .uri("/game/move")
+        .set_json(&move_req)
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+
+    assert_eq!(resp.status(), 422);
+    let body: HTTPValidationError = test::read_body_json(resp).await;
+    assert!(body.detail[0].msg.contains("Cell is already occupied"));
+}

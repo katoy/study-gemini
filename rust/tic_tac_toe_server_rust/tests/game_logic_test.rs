@@ -318,6 +318,13 @@ fn test_player_deserialize_invalid() {
 }
 
 #[test]
+fn test_player_deserialize_not_a_string() {
+    let json = "123";
+    let result: Result<Player, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+}
+
+#[test]
 fn test_player_serialization() {
     assert_eq!(serde_json::to_string(&Player::X).unwrap(), "\"X\"");
     assert_eq!(serde_json::to_string(&Player::O).unwrap(), "\"O\"");

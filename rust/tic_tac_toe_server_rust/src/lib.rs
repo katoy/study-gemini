@@ -41,6 +41,10 @@ pub fn configure_app(cfg: &mut web::ServiceConfig) {
 /// Sets up the server and returns the `Server` handle and its listening address.
 /// Binds to a random available port.
 pub fn bootstrap(port: u16) -> std::io::Result<(Server, SocketAddr)> {
+    bootstrap_with_filepath(port, "openapi.json")
+}
+
+pub fn bootstrap_with_filepath(port: u16, openapi_path: &str) -> std::io::Result<(Server, SocketAddr)> {
     let listener = TcpListener::bind(format!("127.0.0.1:{}", port))?;
     let addr = listener.local_addr()?;
 
@@ -51,11 +55,11 @@ pub fn bootstrap(port: u16) -> std::io::Result<(Server, SocketAddr)> {
     // OpenAPIドキュメントを生成
     let openapi_doc = server::ApiDoc::openapi(); // ApiDoc から OpenApi インスタンスを生成
 
-    if let Err(e) = write_openapi_file(&openapi_doc, "openapi.json") {
-        log::error!("Failed to write openapi.json: {}", e);
-        return Err(std::io::Error::other(format!("Failed to write openapi.json: {}", e)));
+    if let Err(e) = write_openapi_file(&openapi_doc, openapi_path) {
+        log::error!("Failed to write {}: {}", openapi_path, e);
+        return Err(std::io::Error::other(format!("Failed to write {}: {}", openapi_path, e)));
     }
-    log::info!("OpenAPI specification written to openapi.json");
+    log::info!("OpenAPI specification written to {}", openapi_path);
 
     let openapi_doc_arc = Arc::new(openapi_doc); // Arc でラップ
 
@@ -259,22 +263,112 @@ mod tests {
         run_task.abort(); // Forcefully abort the task to prevent hanging
     }
 
-    #[tokio::test]
-    async fn test_bootstrap_bind_error() {
-        use std::net::TcpListener;
+        #[tokio::test]
 
-        // GIVEN: A port that is already in use
-        let _listener = TcpListener::bind("127.0.0.1:8001").expect("Failed to bind to port for test setup (preventing reuse)");
+        async fn test_bootstrap_bind_error() {
 
-        // WHEN: bootstrap is called trying to bind to the same port
-        let result = bootstrap(8001);
+            use std::net::TcpListener;
 
-        // THEN: It should return an AddrInUse error
-        assert!(result.is_err());
-        let err = match result {
-            Ok(_) => panic!("Expected an error, but got Ok"),
-            Err(e) => e,
-        };
-        assert_eq!(err.kind(), std::io::ErrorKind::AddrInUse);
-    }
-}
+    
+
+            // GIVEN: A port that is already in use
+
+            let _listener = TcpListener::bind("127.0.0.1:8001")
+
+                .expect("Failed to bind to port for test setup (preventing reuse)");
+
+    
+
+            // WHEN: bootstrap is called trying to bind to the same port
+
+            let result = bootstrap(8001);
+
+    
+
+            // THEN: It should return an AddrInUse error
+
+            assert!(result.is_err());
+
+            let err = match result {
+
+                Ok(_) => panic!("Expected an error, but got Ok"),
+
+                Err(e) => e,
+
+            };
+
+            assert_eq!(err.kind(), std::io::ErrorKind::AddrInUse);
+
+        }
+
+    
+
+        #[tokio::test]
+
+        async fn test_bootstrap_write_error() {
+
+            use tempfile::tempdir;
+
+    
+
+            // GIVEN: An invalid file path for openapi.json
+
+            let temp_dir = tempdir().expect("Failed to create temporary directory");
+
+            let invalid_path = temp_dir.path().join("non_existent_subdir").join("openapi.json");
+
+            let file_path = invalid_path.to_str().expect("Failed to get invalid file path");
+
+    
+
+                    // WHEN: bootstrap_with_filepath is called with the invalid path
+
+    
+
+                    let result = bootstrap_with_filepath(8004, file_path);
+
+    
+
+            
+
+    
+
+                    // THEN: It should return an error
+
+    
+
+                    assert!(result.is_err());
+
+    
+
+                    let err = match result {
+
+    
+
+                        Ok(_) => panic!("Expected an error"),
+
+    
+
+                        Err(e) => e,
+
+    
+
+                    };
+
+    
+
+                    assert_eq!(err.kind(), std::io::ErrorKind::Other);
+
+    
+
+                }
+
+    
+
+            }
+
+    
+
+            
+
+    
