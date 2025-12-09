@@ -7,15 +7,17 @@
 - [Rust CUI Client](#rust-cui-client)
   - [目次](#目次)
   - [概要](#概要)
+  - [ファイル構成](#ファイル構成)
   - [ビルド方法](#ビルド方法)
   - [実行方法](#実行方法)
   - [テスト](#テスト)
   - [カバレッジ計測](#カバレッジ計測)
-  - [Lintチェック](#lintチェック)
+  - [Lintチェックとフォーマット](#lintチェックとフォーマット)
 
 ## 概要
 
 このクライアントはRustで実装されており、Python製のFastAPIサーバーと通信します。ユーザーはコンソールを通じて手を指定し、ゲームの進行をテキストで確認できます。
+主なロジックは `src/lib.rs` に集約されており、高いテストカバレッジを実現しています。
 
 ## ファイル構成
 
@@ -23,15 +25,15 @@
 
 ```
 .
-├── Cargo.toml
-├── Cargo.lock
+├── Cargo.toml          # Rustプロジェクトの定義ファイル
+├── Cargo.lock          # 依存関係のロックファイル
 ├── src/
-│   ├── main.rs
-│   ├── lib.rs
-│   ├── display.rs
-│   ├── game_client.rs
-│   └── models.rs
-├── tests/
+│   ├── main.rs         # エントリポイント
+│   ├── lib.rs          # アプリケーションのコアロジック
+│   ├── display.rs      # 盤面表示ロジック
+│   ├── game_client.rs  # サーバー通信クライアント
+│   └── models.rs       # データモデル定義
+├── tests/              # 統合テスト
 │   ├── display_test.rs
 │   ├── game_client_test.rs
 │   ├── main_test.rs
@@ -80,14 +82,14 @@ cargo install cargo-llvm-cov
 
 カバレッジを測定するには、`rust/CUI` ディレクトリで以下のコマンドを実行します。
 
-#### コンソールでの確認
+### コンソールでの確認
 
 ```bash
 cd rust/CUI
 cargo llvm-cov --text
 ```
 
-#### HTMLレポートの生成
+### HTMLレポートの生成
 
 ```bash
 cd rust/CUI
@@ -95,11 +97,31 @@ cargo llvm-cov --html
 open target/llvm-cov/html/index.html # macOSの場合
 ```
 
-## Lintチェック
+## Lintチェックとフォーマット
 
-Rustコードの品質を保つために、`cargo clippy` を使用してLintチェックを行います。
+コード品質を維持するために、Clippyとrustfmtを使用します。
+
+### Lintチェック (Clippy)
+
+潜在的なバグや非推奨なコードパターンを検出します。
 
 ```bash
 cd rust/CUI
 cargo clippy
+```
+
+### コードフォーマット
+
+コードのスタイルが標準規約に従っているか確認します。
+
+```bash
+cd rust/CUI
+cargo fmt --check
+```
+
+フォーマットを自動修正するには以下を実行します。
+
+```bash
+cd rust/CUI
+cargo fmt
 ```

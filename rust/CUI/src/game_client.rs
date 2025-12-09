@@ -3,7 +3,6 @@ use anyhow::{anyhow, Result};
 use reqwest::Client;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use std::collections::HashMap;
 
 pub struct GameClient {
     client: Client,
@@ -15,7 +14,7 @@ impl GameClient {
     pub fn new(server_url: String) -> Self {
         Self::with_client(server_url, Client::new())
     }
-    
+
     pub fn with_client(server_url: String, client: Client) -> Self {
         GameClient {
             client,
@@ -41,11 +40,7 @@ impl GameClient {
             let status = response.status();
             let error_body = response.json::<ErrorDetail>().await;
             if let Ok(error_detail) = error_body {
-                return Err(anyhow!(
-                    "HTTP Error {}: {}",
-                    status,
-                    error_detail.detail
-                ));
+                return Err(anyhow!("HTTP Error {}: {}", status, error_detail.detail));
             }
             return Err(anyhow!("HTTP Error {}", status));
         }
@@ -59,7 +54,10 @@ impl GameClient {
             return Ok(agents.clone());
         }
 
-        match self.send_request::<Agents, ()>(reqwest::Method::GET, "available_agents", None).await {
+        match self
+            .send_request::<Agents, ()>(reqwest::Method::GET, "agents", None)
+            .await
+        {
             Ok(agents_response) => {
                 let agents = agents_response.agents;
                 self.available_agents = Some(agents.clone());
@@ -81,25 +79,36 @@ impl GameClient {
             }
         }
     }
-    
-    pub async fn start_game(&self, human_player_symbol: &str, player_x_type: &str, player_o_type: &str) -> Result<GameState> {
-        let mut body = HashMap::new();
-        body.insert("human_player_symbol", human_player_symbol);
-        body.insert("player_x_type", player_x_type);
-        body.insert("player_o_type", player_o_type);
-        self.send_request(reqwest::Method::POST, "start_game", Some(&body)).await
+
+    pub async fn start_game(
+        &self,
+        human_player_symbol: &str,
+        player_x_type: &str,
+        player_o_type: &str,
+    ) -> Result<GameState> {
+        let symbol = if human_player_symbol.is_empty() {
+            None
+        } else {
+            Some(human_player_symbol.to_string())
+        };
+
+        let body = crate::models::StartGameRequest {
+            human_player_symbol: symbol,
+            player_x_type: player_x_type.to_string(),
+            player_o_type: player_o_type.to_string(),
+        };
+        self.send_request(reqwest::Method::POST, "game/start", Some(&body))
+            .await
     }
 
     pub async fn make_move(&self, row: usize, col: usize) -> Result<GameState> {
         let body = MoveRequest { row, col };
-        self.send_request(reqwest::Method::POST, "make_move", Some(&body)).await
+        self.send_request(reqwest::Method::POST, "game/move", Some(&body))
+            .await
     }
 
     pub async fn get_game_status(&self) -> Result<GameState> {
-        self.send_request::<GameState, ()>(reqwest::Method::GET, "game_status", None).await
-    }
-
-    pub async fn make_agent_move(&self) -> Result<GameState> {
-        self.send_request::<GameState, ()>(reqwest::Method::POST, "game_agent_move", None).await
+        self.send_request::<GameState, ()>(reqwest::Method::GET, "game/status", None)
+            .await
     }
 }

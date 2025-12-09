@@ -19,7 +19,19 @@ pub struct ErrorDetail {
 }
 
 #[derive(Serialize)]
+
 pub struct MoveRequest {
     pub row: usize,
+
     pub col: usize,
+}
+
+#[derive(Serialize)]
+
+pub struct StartGameRequest {
+    pub human_player_symbol: Option<String>,
+
+    pub player_x_type: String,
+
+    pub player_o_type: String,
 }

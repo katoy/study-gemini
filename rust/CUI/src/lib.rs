@@ -5,48 +5,62 @@ pub mod models;
 use anyhow::Result;
 use game_client::GameClient;
 use std::io::{BufRead, Write};
-use tokio::time::{sleep, Duration};
-
-
 
 pub async fn run_main<R: BufRead, W: Write>(
     client: &mut GameClient,
     reader: &mut R,
     writer: &mut W,
-) {
+) -> Result<()> {
     loop {
         if let Err(e) = play_single_game(client, reader, writer).await {
-            writeln!(writer, "An error occurred during the game: {}", e).unwrap();
+            writeln!(writer, "An error occurred during the game: {}", e)?;
         }
 
         if !get_play_again_choice(reader, writer).unwrap_or(false) {
             break;
         }
     }
+    Ok(())
 }
-
 
 pub fn get_play_again_choice<R: BufRead, W: Write>(reader: &mut R, writer: &mut W) -> Result<bool> {
     write!(writer, "Game over. Play again? (y/n): ")?;
     writer.flush()?;
     let mut choice = String::new();
-    reader.read_line(&mut choice)?;
+    if reader.read_line(&mut choice)? == 0 {
+        return Ok(false);
+    }
     Ok(choice.trim().to_lowercase() == "y")
 }
 
-pub async fn play_single_game<R: BufRead, W: Write>(client: &mut GameClient, reader: &mut R, writer: &mut W) -> Result<()> {
+pub async fn play_single_game<R: BufRead, W: Write>(
+    client: &mut GameClient,
+    reader: &mut R,
+    writer: &mut W,
+) -> Result<()> {
     writeln!(writer, "\n--- Start New Tic Tac Toe Game ---")?;
 
-    let human_player_symbol = get_player_symbol_choice(reader, writer)?;
     let player_x_type = get_agent_type_choice(client, "X", reader, writer).await?;
     let player_o_type = get_agent_type_choice(client, "O", reader, writer).await?;
+
+    let human_player_symbol_for_server = if player_x_type == "Human" {
+        "X".to_string()
+    } else if player_o_type == "Human" {
+        "O".to_string()
+    } else {
+        "".to_string() // None に相当、サーバー側で None として扱われる
+    };
 
     writeln!(writer, "\nStarting new Tic Tac Toe game...")?;
 
     let mut game_state = client
-        .start_game(&human_player_symbol, &player_x_type, &player_o_type)
+        .start_game(
+            &human_player_symbol_for_server,
+            &player_x_type,
+            &player_o_type,
+        )
         .await?;
-            display::display_board(&game_state, writer)?;
+    display::display_board(&game_state, writer)?;
 
     while !game_state.game_over {
         let current_player = &game_state.current_player;
@@ -59,8 +73,7 @@ pub async fn play_single_game<R: BufRead, W: Write>(client: &mut GameClient, rea
                 match client.make_move(row, col).await {
                     Ok(new_state) => {
                         game_state = new_state;
-
-                                display::display_board(&game_state, writer)?;
+                        display::display_board(&game_state, writer)?;
                     }
                     Err(e) => {
                         writeln!(writer, "Error: {}", e)?;
@@ -73,30 +86,18 @@ pub async fn play_single_game<R: BufRead, W: Write>(client: &mut GameClient, rea
                 return Ok(());
             }
         } else {
-            writeln!(writer, "Player {} (Agent) is thinking...", current_player)?;
-            sleep(Duration::from_secs(1)).await; // Simulate agent thinking
-            game_state = client.make_agent_move().await?;
-
-                    display::display_board(&game_state, writer)?;
+            // Agent moves are handled by the server with the previous request.
+            // Just display the current board state and proceed.
+            writeln!(writer, "Player {} (Agent) has made a move.", current_player)?;
+            // The game_state is already updated from the previous request (start_game or human move)
+            // No need to call game/status again here.
+            // The loop will naturally re-evaluate game_state.game_over and is_human_turn.
+            game_state = client.get_game_status().await?;
+            display::display_board(&game_state, writer)?;
         }
     }
 
     Ok(())
-}
-
-pub fn get_player_symbol_choice<R: BufRead, W: Write>(reader: &mut R, writer: &mut W) -> Result<String> {
-    loop {
-        write!(writer, "Choose your player (X/O): ")?;
-        writer.flush()?;
-        let mut choice = String::new();
-        reader.read_line(&mut choice)?;
-        let choice = choice.trim().to_uppercase();
-        if choice == "X" || choice == "O" {
-            return Ok(choice);
-        } else {
-            writeln!(writer, "Invalid choice. Please enter 'X' or 'O'.")?;
-        }
-    }
 }
 
 pub async fn get_agent_type_choice<R: BufRead, W: Write>(
@@ -121,7 +122,9 @@ pub async fn get_agent_type_choice<R: BufRead, W: Write>(
         writer.flush()?;
 
         let mut choice_num_str = String::new();
-        reader.read_line(&mut choice_num_str)?;
+        if reader.read_line(&mut choice_num_str)? == 0 {
+            return Ok("Human".to_string()); // Default on EOF
+        }
 
         match choice_num_str.trim().parse::<usize>() {
             Ok(choice_num) if (1..=agent_types.len()).contains(&choice_num) => {
@@ -138,12 +141,17 @@ pub async fn get_agent_type_choice<R: BufRead, W: Write>(
     }
 }
 
-pub fn get_user_move<R: BufRead, W: Write>(reader: &mut R, writer: &mut W) -> Result<Option<(usize, usize)>> {
+pub fn get_user_move<R: BufRead, W: Write>(
+    reader: &mut R,
+    writer: &mut W,
+) -> Result<Option<(usize, usize)>> {
     loop {
         write!(writer, "Enter your move (1-9) or 'q' to quit: ")?;
         writer.flush()?;
         let mut user_input = String::new();
-        reader.read_line(&mut user_input)?;
+        if reader.read_line(&mut user_input)? == 0 {
+            return Ok(None);
+        }
         let user_input = user_input.trim().to_lowercase();
 
         if user_input == "q" || user_input == "quit" {
@@ -157,7 +165,10 @@ pub fn get_user_move<R: BufRead, W: Write>(reader: &mut R, writer: &mut W) -> Re
                 return Ok(Some((row, col)));
             }
             _ => {
-                writeln!(writer, "Invalid input. Please enter a number between 1 and 9.")?;
+                writeln!(
+                    writer,
+                    "Invalid input. Please enter a number between 1 and 9."
+                )?;
             }
         }
     }
