@@ -16,9 +16,11 @@ pub struct StartGameRequest {
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct BoardState {
     #[serde(with = "crate::schemas::board_serializer")]
+    #[schema(max_items = 3, min_items = 3)]
     pub board: [[Player; 3]; 3],
     pub current_player: Player,
     pub winner: Option<Player>,
+    #[schema(example = "[[0,0], [1,1], [2,2]]", max_items = 3, min_items = 3)]
     pub winner_line: Option<[(usize, usize); 3]>,
     pub game_over: bool,
 }
@@ -69,6 +71,20 @@ pub struct MoveRequest {
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct AvailableAgentsResponse {
     pub agents: Vec<String>,
+}
+
+// Python API の HTTPValidationError に対応
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct HTTPValidationError {
+    pub detail: Vec<ValidationError>,
+}
+
+// Python API の ValidationError に対応
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct ValidationError {
+    pub loc: Vec<String>, // Pythonでは (string | integer)[] だが、RustではStringに統一
+    pub msg: String,
+    pub r#type: String, // `type` はRustのキーワードなので `r#type` を使用
 }
 
 #[derive(Serialize, ToSchema)]

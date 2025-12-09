@@ -262,41 +262,30 @@ def test_play_single_game_human_quits(
 ):
     # Simulate game start
     mock_send_request.side_effect = [
+        # Response for POST game/start (After X's first move (0,0) and O's first move (0,1))
         {
-            "board": [[" ", " ", " "]] * 3,
+            "board": [[" ", " ", " "]] * 3, # Initial empty board
             "current_player": "X",
             "winner": None,
             "winner_line": None,
             "game_over": False,
-        },  # Start game (1)
+        },
+        # Response for POST game/move for X's (0,0) (After X's (0,0) AND O's (1,1))
         {
-            "board": [["X", " ", " "]] * 3,
-            "current_player": "O",
-            "winner": None,
-            "winner_line": None,
-            "game_over": False,
-        },  # Human move 1 (2)
-        {
-            "board": [["X", "O", " "]] * 3,
+            "board": [["X", " ", " "], [" ", "O", " "], [" ", " ", " "]],
             "current_player": "X",
             "winner": None,
             "winner_line": None,
             "game_over": False,
-        },  # Agent move 1 (3)
+        },
+        # Response for POST game/move for X's (0,1) (After X's (0,1) AND O's (1,0))
         {
-            "board": [["X", "O", "X"]] * 3,
-            "current_player": "O",
-            "winner": None,
-            "winner_line": None,
-            "game_over": False,
-        },  # Human move 2 (4)
-        {
-            "board": [["X", "O", "X"], ["O", " ", " "], [" ", " ", " "]],
+            "board": [["X", "X", " "], ["O", "O", " "], [" ", " ", " "]], # Example state
             "current_player": "X",
             "winner": None,
             "winner_line": None,
             "game_over": False,
-        },  # Agent move 2 (5)
+        },
     ]
 
     with patch("builtins.print") as mock_print:
@@ -304,7 +293,7 @@ def test_play_single_game_human_quits(
         mock_print.assert_any_call("Game interrupted by user.")
 
     assert mock_get_user_move.call_count == 3
-    assert mock_send_request.call_count == 5  # Corrected from 4
+    assert mock_send_request.call_count == 3
     mock_display_board.assert_called()
 
 
@@ -331,70 +320,30 @@ def test_play_single_game_human_win(
             "game_over": False,
         },  # Start game (1)
         {
-            "board": [["X", " ", " "]] * 3,
-            "current_player": "O",
-            "winner": None,
-            "winner_line": None,
-            "game_over": False,
-        },  # Human move 1 (2)
-        {
-            "board": [["X", "O", " "]] * 3,
+            "board": [["X", " ", " "], [" ", "O", " "], [" ", " ", " "]], # X at (0,0), O at (1,1)
             "current_player": "X",
             "winner": None,
             "winner_line": None,
             "game_over": False,
-        },  # Agent move 1 (3)
+        },  # Human move 1 (2nd call for X (0,0))
         {
-            "board": [["X", "O", "X"], [" ", " ", " "], [" ", " ", " "]],
-            "current_player": "O",
+            "board": [["X", "X", " "], [" ", "O", " "], [" ", " ", "O"]], # X at (0,1), O at (2,2)
+            "current_player": "X",
             "winner": None,
             "winner_line": None,
             "game_over": False,
-        },  # Human move 2 (4)
+        },  # Human move 2 (3rd call for X (0,1))
         {
-            "board": [["X", "O", "X"], ["O", " ", " "], [" ", " ", " "]],
+            "board": [["X", "X", "X"], [" ", "O", " "], [" ", " ", "O"]], # X at (0,2), X wins
             "current_player": "X",
             "winner": "X",
             "winner_line": ((0, 0), (0, 1), (0, 2)),
             "game_over": True,
-        },  # Agent move 2 (O) -> human X wins (5)
+        },  # Human move 3 (4th call for X (0,2))
     ]
 
     client.play_single_game()
-    assert mock_get_user_move.call_count == 2
-    assert mock_send_request.call_count == 5  # Corrected from 4
+    assert mock_get_user_move.call_count == 3
+    assert mock_send_request.call_count == 4  # 1 for start, 3 for moves
     mock_display_board.assert_called()
 
-
-@patch("CUI.tic_tac_toe_client.display_board")
-@patch.object(TicTacToeClient, "_send_request")
-@patch.object(TicTacToeClient, "get_player_symbol_choice", return_value="O")
-@patch.object(TicTacToeClient, "get_agent_type_choice", side_effect=["Random", "Human"])
-@patch("time.sleep")  # Mock time.sleep for agent turn
-def test_play_single_game_agent_turn_and_request_error(
-    mock_sleep,
-    mock_get_agent_type,
-    mock_get_player_symbol,
-    mock_send_request,
-    mock_display_board,
-    client,
-):
-    # Simulate game start with O as human, X as agent
-    mock_send_request.side_effect = [
-        {
-            "board": [[" ", " ", " "]] * 3,
-            "current_player": "X",
-            "winner": None,
-            "winner_line": None,
-            "game_over": False,
-        },  # Start game (1)
-        # Agent's turn, status GET fails
-        requests.exceptions.RequestException("Agent turn status error"),
-    ]
-
-    with patch.object(TicTacToeClient, "get_user_move"):
-        client.play_single_game()
-
-    assert mock_send_request.call_count == 2
-    mock_sleep.assert_called_once()
-    mock_display_board.assert_called_once()  # Only at the start

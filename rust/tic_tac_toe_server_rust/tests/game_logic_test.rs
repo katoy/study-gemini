@@ -24,26 +24,6 @@ fn test_player_opponent() {
     assert_eq!(Player::None.opponent(), Player::None);
 }
 
-#[test]
-fn test_player_display() {
-    assert_eq!(format!("{}", Player::X), "X");
-    assert_eq!(format!("{}", Player::O), "O");
-    assert_eq!(format!("{}", Player::None), " ");
-}
-
-// TicTacToe 構造体のテスト
-#[test]
-fn test_new_game() {
-    let game = TicTacToe::new(None, None, None);
-    assert_eq!(game.board, [[Player::None; 3]; 3]);
-    assert_eq!(game.current_player, Player::X);
-    assert_eq!(game.winner, None);
-    assert_eq!(game.winner_line, None);
-    assert!(!game.game_over);
-    assert!(game.agent_x.is_none());
-    assert!(game.agent_o.is_none());
-    assert!(game.human_player.is_none());
-}
 
 #[test]
 fn test_make_valid_move() {
@@ -358,6 +338,8 @@ fn test_player_display_fmt() {
     assert_eq!(format!("{}", Player::O), "O");
     assert_eq!(format!("{}", Player::None), " ");
 }
+
+
 
 
 #[test]

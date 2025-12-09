@@ -42,7 +42,7 @@ impl fmt::Display for Player {
         match self {
             Player::X => write!(f, "X"),
             Player::O => write!(f, "O"),
-            Player::None => write!(f, " "), // 空のセルはスペースで表示
+            Player::None => write!(f, " "), // 空のセルや勝者がいない場合
         }
     }
 }

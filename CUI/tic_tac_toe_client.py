@@ -1,5 +1,4 @@
 import requests
-import time
 from .cui_display import display_board  # Will create this module later
 
 
@@ -109,19 +108,26 @@ class TicTacToeClient:
                     col = (move_num - 1) % 3
                     return row, col
                 else:
-                    print("Invalid input. Please enter a number between 1 and 9.")  # pragma: no cover
+                    print(
+                        "Invalid input. Please enter a number between 1 and 9."
+                    )  # pragma: no cover
             except ValueError:
                 print("Invalid input format. Please enter a single number or 'q'.")
 
     def play_single_game(self):
         print("\n--- Start New Tic Tac Toe Game ---")
-        human_player_symbol = self.get_player_symbol_choice()
-
         player_x_type = self.get_agent_type_choice("X")
         player_o_type = self.get_agent_type_choice("O")
 
+        # Determine human_player_symbol based on chosen agent types
+        human_player_symbol_for_server = None
+        if player_x_type == "Human":
+            human_player_symbol_for_server = "X"
+        elif player_o_type == "Human":
+            human_player_symbol_for_server = "O"
+
         start_game_data = {
-            "human_player_symbol": human_player_symbol,
+            "human_player_symbol": human_player_symbol_for_server,
             "player_x_type": player_x_type,
             "player_o_type": player_o_type,
         }
@@ -129,6 +135,7 @@ class TicTacToeClient:
         print("\nStarting new Tic Tac Toe game...")
         try:
             game_state = self._send_request("POST", "game/start", start_game_data)
+            print(f"DEBUG: Initial game_state from server: {game_state}") # Debug print
             display_board(game_state)
         except (requests.exceptions.RequestException, ValueError):
             return  # Allow main loop to prompt for play again
@@ -152,16 +159,19 @@ class TicTacToeClient:
                     game_state = self._send_request(
                         "POST", "game/move", {"row": row, "col": col}
                     )
+                    print(f"DEBUG: game_state after human move: {game_state}") # Debug print
                     display_board(game_state)
-                except ValueError:  # Caught invalid move from _send_request  # pragma: no cover
+                except (
+                    ValueError
+                ):  # Caught invalid move from _send_request  # pragma: no cover
                     continue  # Prompt for move again
                 except requests.exceptions.RequestException:  # pragma: no cover
                     break  # Fatal error, exit game loop
             else:
-                print(f"Player {current_player} (Agent) is thinking...")
-                time.sleep(1)  # Simulate agent thinking
-                try:
-                    game_state = self._send_request("GET", "game/status")
-                    display_board(game_state)
-                except requests.exceptions.RequestException:
-                    break  # Fatal error, exit game loop
+                # Agent moves are handled by the server with the previous request.
+                # Just display the current board state and proceed.
+                print(f"Player {current_player} (Agent) has made a move.")
+                print(f"DEBUG: game_state for agent turn (unchanged from previous): {game_state}") # Debug print
+                # The game_state is already updated from the previous request (start_game or human move)
+                # No need to call game/status again here.
+                # The loop will naturally re-evaluate game_state["game_over"] and is_human_turn.
