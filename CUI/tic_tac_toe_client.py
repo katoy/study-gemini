@@ -135,7 +135,7 @@ class TicTacToeClient:
         print("\nStarting new Tic Tac Toe game...")
         try:
             game_state = self._send_request("POST", "game/start", start_game_data)
-            print(f"DEBUG: Initial game_state from server: {game_state}") # Debug print
+            print(f"DEBUG: Initial game_state from server: {game_state}")  # Debug print
             display_board(game_state)
         except (requests.exceptions.RequestException, ValueError):
             return  # Allow main loop to prompt for play again
@@ -159,7 +159,7 @@ class TicTacToeClient:
                     game_state = self._send_request(
                         "POST", "game/move", {"row": row, "col": col}
                     )
-                    print(f"DEBUG: game_state after human move: {game_state}") # Debug print
+                    print(f"DEBUG: game_state after human move: {game_state}")  # Debug print
                     display_board(game_state)
                 except (
                     ValueError
@@ -171,7 +171,7 @@ class TicTacToeClient:
                 # Agent moves are handled by the server with the previous request.
                 # Just display the current board state and proceed.
                 print(f"Player {current_player} (Agent) has made a move.")
-                print(f"DEBUG: game_state for agent turn (unchanged from previous): {game_state}") # Debug print
+                print(f"DEBUG: game_state for agent turn (unchanged from previous): {game_state}")  # Debug print
                 # The game_state is already updated from the previous request (start_game or human move)
                 # No need to call game/status again here.
                 # The loop will naturally re-evaluate game_state["game_over"] and is_human_turn.
