@@ -127,6 +127,22 @@ def test_start_game_ai_starts(gui):
     gui.mock_game.switch_player.assert_called_once()
 
 
+def test_start_game_agent_init_error(gui):
+    """エージェントの初期化に失敗した場合（APIキー未設定など）、エラーを表示してゲーム開始を中断するかテスト"""
+    gui.mock_settings_ui.agent_var.get.return_value = "ChatGPT"
+    gui.mock_settings_ui.AGENT_CLASSES["ChatGPT"] = MagicMock(
+        side_effect=Exception("Missing credentials")
+    )
+    mock_label = gui.result_label
+    mock_label.pack.reset_mock()
+
+    gui.start_game()
+
+    gui.mock_tictactoe_class.assert_not_called()
+    mock_label.config.assert_called_with(text="エラー: ChatGPT の初期化に失敗しました")
+    mock_label.pack.assert_called_once()
+
+
 def test_on_canvas_click(gui):
     """キャンバスのクリックがcell_clickedに正しく渡されるかテスト"""
     gui.start_game()

@@ -88,12 +88,19 @@ class TicTacToeGUI:
 
         # self.selected_player が True なら人間が X (agent_o が AI)
         # self.selected_player が False なら人間が O (agent_x が AI)
-        if self.selected_player:  # True: Human plays X, AI plays O
-            human_player_symbol = "X"
-            agent_o_instance = self._create_agent_instance(self.selected_agent, "O")
-        else:  # False: Human plays O, AI plays X
-            human_player_symbol = "O"
-            agent_x_instance = self._create_agent_instance(self.selected_agent, "X")
+        try:
+            if self.selected_player:  # True: Human plays X, AI plays O
+                human_player_symbol = "X"
+                agent_o_instance = self._create_agent_instance(self.selected_agent, "O")
+            else:  # False: Human plays O, AI plays X
+                human_player_symbol = "O"
+                agent_x_instance = self._create_agent_instance(self.selected_agent, "X")
+        except Exception:
+            self.result_label.config(
+                text=f"エラー: {self.selected_agent} の初期化に失敗しました"
+            )
+            self.result_label.pack()
+            return
 
         self.game = TicTacToe(
             agent_x=agent_x_instance,
