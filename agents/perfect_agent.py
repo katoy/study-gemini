@@ -4,6 +4,7 @@ perfect_agent.py: Implements the Perfect agent.
 
 import json
 import os
+from typing import List, Tuple, Dict
 from agents.base_agent import BaseAgent
 
 
@@ -24,7 +25,7 @@ class PerfectAgent(BaseAgent):
         self.perfect_moves_file = perfect_moves_file
         self.perfect_moves = self.load_perfect_moves()
 
-    def load_perfect_moves(self) -> dict:
+    def load_perfect_moves(self) -> Dict[str, int]:
         """Loads the perfect moves from the JSON file."""
         if not os.path.exists(self.perfect_moves_file):
             raise FileNotFoundError(
@@ -33,15 +34,15 @@ class PerfectAgent(BaseAgent):
         with open(self.perfect_moves_file, "r", encoding="latin-1") as f:
             return json.loads(f.read())
 
-    def get_move(self, board: list) -> tuple[int, int]:
+    def get_move(self, board: List[List[str]]) -> Tuple[int, int]:
         """
         Gets the perfect move for the current board state.
 
         Args:
-            board (list): The current game board.
+            board (List[List[str]]): The current game board.
 
         Returns:
-            tuple[int, int]: The (row, col) of the move.
+            Tuple[int, int]: The (row, col) of the move.
 
         Raises:
             KeyError: If no perfect move is found for the given board.
@@ -58,8 +59,8 @@ class PerfectAgent(BaseAgent):
                 f"This pattern is not registered in the dictionary."
             )
 
-    def board_to_string(self, board: list) -> str:
+    def board_to_string(self, board: List[List[str]]) -> str:
         return "".join(cell if cell != " " else " " for row in board for cell in row)
 
-    def index_to_move(self, index: int) -> tuple[int, int]:
+    def index_to_move(self, index: int) -> Tuple[int, int]:
         return index // 3, index % 3

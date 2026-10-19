@@ -42,12 +42,12 @@ def evaluate_models(q_table_file1, q_table_file2, num_games):
             draws += 1
 
     print(
-        f"Agent1 ({q_table_file1}) の勝利: {agent1_wins} ({agent1_wins/num_games:.1%})"
+        f"Agent1 ({q_table_file1}) の勝利: {agent1_wins} ({agent1_wins / num_games:.1%})"
     )
     print(
-        f"Agent2 ({q_table_file2}) の勝利: {agent2_wins} ({agent2_wins/num_games:.1%})"
+        f"Agent2 ({q_table_file2}) の勝利: {agent2_wins} ({agent2_wins / num_games:.1%})"
     )
-    print(f"引き分け: {draws} ({draws/num_games:.1%})")
+    print(f"引き分け: {draws} ({draws / num_games:.1%})")
 
     # --- Agent2が先手 ('X') の場合 ---
     agent1_wins_as_o = 0
@@ -84,12 +84,12 @@ def evaluate_models(q_table_file1, q_table_file2, num_games):
             draws_as_o += 1
 
     print(
-        f"Agent1 ({q_table_file1}) の勝利: {agent1_wins_as_o} ({agent1_wins_as_o/num_games:.1%})"
+        f"Agent1 ({q_table_file1}) の勝利: {agent1_wins_as_o} ({agent1_wins_as_o / num_games:.1%})"
     )
     print(
-        f"Agent2 ({q_table_file2}) の勝利: {agent2_wins_as_x} ({agent2_wins_as_x/num_games:.1%})"
+        f"Agent2 ({q_table_file2}) の勝利: {agent2_wins_as_x} ({agent2_wins_as_x / num_games:.1%})"
     )
-    print(f"引き分け: {draws_as_o} ({draws_as_o/num_games:.1%})")
+    print(f"引き分け: {draws_as_o} ({draws_as_o / num_games:.1%})")
 
     # --- 総合結果 ---
     total_agent1_wins = agent1_wins + agent1_wins_as_o
@@ -99,12 +99,12 @@ def evaluate_models(q_table_file1, q_table_file2, num_games):
 
     print("\n--- 総合結果 ---")
     print(
-        f"Agent1 ({q_table_file1}) の総勝利数: {total_agent1_wins} ({total_agent1_wins/total_games:.1%})"
+        f"Agent1 ({q_table_file1}) の総勝利数: {total_agent1_wins} ({total_agent1_wins / total_games:.1%})"
     )
     print(
-        f"Agent2 ({q_table_file2}) の総勝利数: {total_agent2_wins} ({total_agent2_wins/total_games:.1%})"
+        f"Agent2 ({q_table_file2}) の総勝利数: {total_agent2_wins} ({total_agent2_wins / total_games:.1%})"
     )
-    print(f"総引き分け数: {total_draws} ({total_draws/total_games:.1%})")
+    print(f"総引き分け数: {total_draws} ({total_draws / total_games:.1%})")
 
 
 def main():

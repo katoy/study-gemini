@@ -1,6 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
 
 from server.server import app, get_game_manager  # get_game_managerをインポート
 from server.game_manager import GameManager  # GameManagerクラスをインポート

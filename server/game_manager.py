@@ -67,11 +67,18 @@ class GameManager:
         while not self.game.game_over and self.game.get_current_agent() is not None:
             self.game = self.run_ai_move(self.game)
 
-    def create_game_instance(self, player_x_type: str, player_o_type: str, human_player_symbol: Optional[str] = None) -> TicTacToe:
+    def create_game_instance(
+        self,
+        player_x_type: str,
+        player_o_type: str,
+        human_player_symbol: Optional[str] = None,
+    ) -> TicTacToe:
         """Statelessly creates a new game instance."""
         agent_x = self._create_agent(player_x_type, PLAYER_X)
         agent_o = self._create_agent(player_o_type, PLAYER_O)
-        game = TicTacToe(agent_x=agent_x, agent_o=agent_o, human_player=human_player_symbol)
+        game = TicTacToe(
+            agent_x=agent_x, agent_o=agent_o, human_player=human_player_symbol
+        )
         return game
 
     def start_new_game(
@@ -81,7 +88,9 @@ class GameManager:
         human_player_symbol: Optional[str] = None,
     ) -> TicTacToe:
         """Starts a new game and stores it in the instance (stateful)."""
-        self.game = self.create_game_instance(player_x_type, player_o_type, human_player_symbol)
+        self.game = self.create_game_instance(
+            player_x_type, player_o_type, human_player_symbol
+        )
         # 最初のプレイヤーがエージェントの場合、手を打たせる
         self._make_agent_move_if_needed()
         return self.game
@@ -110,12 +119,12 @@ class GameManager:
         """Statelessly runs an AI move on a given game instance."""
         if game.game_over or game.get_current_agent() is None:
             return game
-        
+
         agent = game.get_current_agent()
         try:
             move = agent.get_move([row[:] for row in game.board])
         except (KeyError, IndexError):
-             # Agent might indicate game over, so we re-check winner
+            # Agent might indicate game over, so we re-check winner
             game.check_winner()
             return game
 
@@ -123,8 +132,8 @@ class GameManager:
             row, col = move
             # The agent's move is executed.
             game = self.execute_move(game, row, col)
-        else: # No move from AI, probably a draw
-            game.check_winner() # Update winner status
+        else:  # No move from AI, probably a draw
+            game.check_winner()  # Update winner status
         return game
 
     def make_player_move(self, row: int, col: int) -> TicTacToe:

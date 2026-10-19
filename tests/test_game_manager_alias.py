@@ -1,5 +1,5 @@
-import pytest
 from server.game_manager import GameManager
+
 
 def test_create_agent_with_alias():
     """
@@ -15,6 +15,7 @@ def test_create_agent_with_alias():
     # Since we don't import RandomAgent directly here, we can check the class name
     assert agent.__class__.__name__ == "RandomAgent"
 
+
 def test_create_agent_with_japanese_name():
     """
     Test that GameManager can still create an agent using its Japanese name.
@@ -27,6 +28,7 @@ def test_create_agent_with_japanese_name():
     assert agent is not None
     assert agent.__class__.__name__ == "RandomAgent"
 
+
 def test_start_game_with_alias():
     """
     Test starting a game with an alias.
@@ -35,9 +37,7 @@ def test_start_game_with_alias():
 
     # Start game with Human vs Random (using alias)
     game = game_manager.start_new_game(
-        player_x_type="Human",
-        player_o_type="Random",
-        human_player_symbol="X"
+        player_x_type="Human", player_o_type="Random", human_player_symbol="X"
     )
 
     assert game is not None

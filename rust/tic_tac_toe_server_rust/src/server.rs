@@ -8,31 +8,27 @@ use anyhow::Result;
 use utoipa::OpenApi; // 追加
 
 use crate::game_logic::{TicTacToe, Player};
-use crate::schemas::{StartGameRequest, BoardState, MoveRequest, AvailableAgentsResponse, ErrorResponse};
+use crate::schemas::{StartGameRequest, BoardState, MoveRequest, AvailableAgentsResponse, ErrorResponse, HTTPValidationError, ValidationError};
 use crate::agents::{Agent, RandomAgent};
 use crate::agents;
 
 // API定義
 #[derive(OpenApi)]
 #[openapi(
-    paths(
-        start_game_handler,
-        get_game_status_handler,
-        make_move_handler,
-        get_available_agents_handler,
-    ),
+
     components(
         schemas(
             StartGameRequest,
             BoardState,
             MoveRequest,
             AvailableAgentsResponse,
-            ErrorResponse,
+            HTTPValidationError,
+            ValidationError,
             Player // Enumもスキーマとして認識させる
         )
     ),
     tags(
-        (name = "Tic Tac Toe", description = "三目並べゲームのAPI")
+        (name = "Tic Tac Toe", description = "Tic Tac Toe game API")
     )
 )]
 pub struct ApiDoc;
@@ -79,9 +75,11 @@ impl GameManager {
     }
 
     fn create_agent_instance(&self, agent_type: &str, player: Player, _file_path: Option<&str>) -> Result<Option<Box<dyn Agent + Send + Sync>>> {
+        info!("create_agent_instance: Creating agent of type '{}' for player {:?}", agent_type, player);
         if let Some(factory) = self.agent_factories.get(agent_type) {
             factory(player, None)
         } else {
+            error!("create_agent_instance: Unknown agent type: {}", agent_type);
             Err(anyhow::anyhow!("Unknown agent type: {}", agent_type))
         }
     }
@@ -102,52 +100,68 @@ impl GameManager {
             request.human_player_symbol
         ).await?;
         self.game = Some(game_instance);
+        info!("start_new_game: self.game set. Human player: {:?}, Current player: {:?}", self.game.as_ref().unwrap().human_player, self.game.as_ref().unwrap().current_player);
         self._make_agent_move_if_needed().await; // 最初のプレイヤーがエージェントの場合、手を打たせる
+        info!("start_new_game: After _make_agent_move_if_needed. Human player: {:?}, Current player: {:?}", self.game.as_ref().unwrap().human_player, self.game.as_ref().unwrap().current_player);
         Ok(self.game.clone().unwrap())
     }
 
     async fn _make_agent_move_if_needed(&mut self) {
+        info!("_make_agent_move_if_needed: Function entered.");
         if self.game.is_none() {
+            info!("_make_agent_move_if_needed: self.game is None, returning.");
             return;
         }
         let game = self.game.as_mut().unwrap(); // gameが存在することは is_none でチェック済み
 
         while !game.game_over && game.human_player != Some(game.current_player) {
-            info!("_make_agent_move_if_needed: human_player={:?}, current_player={:?}, game_over={}",
+            info!("_make_agent_move_if_needed: While loop condition check: !game.game_over={}, game.human_player != Some(game.current_player)={}",
+                !game.game_over, game.human_player != Some(game.current_player));
+            info!("_make_agent_move_if_needed: START LOOP - human_player={:?}, current_player={:?}, game_over={}",
                 game.human_player, game.current_player, game.game_over);
+            info!("_make_agent_move_if_needed: Board before AI move: {:?}", game.board);
 
             // 現在のプレイヤーがAIの場合
             if let Some(agent) = game.get_current_agent() {
+                info!("_make_agent_move_if_needed: Agent {:?} is getting move.", agent.get_player());
                 // Agentトレイトのget_moveはResult<Option<Move>>を返す
                 match agent.get_move(&game.board).await {
                     Ok(Some((row, col))) => {
-                        info!("AI ({:?}) chose move: ({}, {})", game.current_player, row, col);
+                        info!("_make_agent_move_if_needed: AI ({:?}) chose move: ({}, {})", game.current_player, row, col);
                         // 手番を実行
                         if let Err(e) = game.make_move(row, col) {
-                            error!("AI made an invalid move: {}", e);
+                            error!("_make_agent_move_if_needed: AI made an invalid move: {}", e);
                             break; // エラーが発生したらループを抜ける
                         }
-                        // make_move内でswitch_playerが呼ばれているので、ここでは呼ばない
+                        info!("_make_agent_move_if_needed: Board after AI move: {:?}", game.board);
                     },
                     Ok(None) => {
                         // AIが手番を返さなかった場合 (例えば、引き分け)
+                        info!("_make_agent_move_if_needed: AI ({:?}) returned no move (e.g., draw).", game.current_player);
                         game.check_game_state(); // ゲームの状態を更新
-                        info!("AI ({:?}) returned no move. Game state checked.", game.current_player);
                         break;
                     },
                     Err(e) => {
-                        error!("Error getting move from AI: {}", e);
+                        error!("_make_agent_move_if_needed: Error getting move from AI: {}", e);
                         break; // エラーが発生したらループを抜ける
                     }
                 }
             } else {
                 // Humanプレイヤーまたはエージェントが設定されていない場合 (should not happen in this loop branch)
-                info!("_make_agent_move_if_needed: No agent found for current_player={:?}", game.current_player);
+                info!("_make_agent_move_if_needed: No agent found for current_player={:?}. Breaking loop.", game.current_player);
                 break;
             }
+            info!("_make_agent_move_if_needed: END LOOP - human_player={:?}, current_player={:?}, game_over={}",
+                game.human_player, game.current_player, game.game_over);
         }
-        info!("_make_agent_move_if_needed: Loop finished. human_player={:?}, current_player={:?}, game_over={}",
-            game.human_player, game.current_player, game.game_over);
+    }
+
+    pub async fn make_agent_move(&mut self) -> Result<BoardState> {
+        if self.game.is_none() {
+            return Err(anyhow::anyhow!("Game not started"));
+        }
+        self._make_agent_move_if_needed().await;
+        self.get_current_game_state()
     }
 
     pub async fn make_player_move(&mut self, row: usize, col: usize) -> Result<TicTacToe> {
@@ -173,7 +187,7 @@ impl GameManager {
             game_over: game.game_over,
         })
     }
-}
+} // GameManager impl の閉じ括弧を追加
 
 impl Default for GameManager {
     fn default() -> Self {
@@ -181,18 +195,15 @@ impl Default for GameManager {
     }
 }
 
-// Global GameManager instance is removed.
-
-// DI 用の GameManager getter is removed.
-
 // エンドポイントハンドラ
+
 #[utoipa::path(
     post,
-    path = "/start_game",
+    path = "/game/start",
     request_body = StartGameRequest,
     responses(
-        (status = 200, description = "新しいゲームが開始されました", body = BoardState),
-        (status = 500, description = "ゲームの開始に失敗しました", body = ErrorResponse)
+        (status = 200, description = "Successful Response", body = BoardState),
+        (status = 422, description = "Validation Error", body = HTTPValidationError)
     ),
     tag = "Tic Tac Toe"
 )]
@@ -208,17 +219,28 @@ pub async fn start_game_handler(
         gm_locked.start_new_game(request).await // この await の前に gm_locked がドロップされる必要がある
     }; // ここで gm_locked がドロップされる
 
-    match game_result { // デリファレンスしてメソッドを呼び出す
-        Ok(game) => HttpResponse::Ok().json(BoardState {
-            board: game.board,
-            current_player: game.current_player,
-            winner: game.winner,
-            winner_line: game.winner_line,
-            game_over: game.game_over,
-        }),
+    match game_result {
+        Ok(game) => {
+            info!("start_game_handler: Sending game state to client: board={:?}, current_player={:?}", game.board, game.current_player);
+            HttpResponse::Ok().json(BoardState {
+                board: game.board,
+                current_player: game.current_player,
+                winner: game.winner,
+                winner_line: game.winner_line,
+                game_over: game.game_over,
+            })
+        },
         Err(e) => {
             error!("Failed to start new game: {}", e);
-            HttpResponse::InternalServerError().json(ErrorResponse { detail: format!("Error: {}", e) })
+            // Convert anyhow::Error to HTTPValidationError for 422
+            let validation_error = ValidationError {
+                loc: vec!["request".to_string()], // Generic location
+                msg: format!("{}", e),
+                r#type: "value_error".to_string(), // Generic type
+            };
+            HttpResponse::UnprocessableEntity().json(HTTPValidationError {
+                detail: vec![validation_error],
+            })
         },
     }
 }
@@ -227,8 +249,7 @@ pub async fn start_game_handler(
     get,
     path = "/game_status",
     responses(
-        (status = 200, description = "現在のゲームの状態を取得", body = BoardState),
-        (status = 404, description = "ゲームが開始されていません", body = ErrorResponse)
+        (status = 200, description = "Successful Response", body = BoardState)
     ),
     tag = "Tic Tac Toe"
 )]
@@ -238,21 +259,26 @@ pub async fn get_game_status_handler(
     let game_manager = game_manager_data.lock().await;
     match game_manager.get_current_game_state() { // デリファレンスしてメソッドを呼び出す
         Ok(board_state) => HttpResponse::Ok().json(board_state),
-        Err(e) => {
-            error!("Failed to get game status: {}", e);
-            HttpResponse::NotFound().json(ErrorResponse { detail: format!("Error: {}", e) })
+        Err(_) => {
+            // If no game is in progress, return a default/empty BoardState as per Python API expectation (no 404)
+            HttpResponse::Ok().json(BoardState {
+                board: [[Player::None; 3]; 3],
+                current_player: Player::X, // Default starting player
+                winner: None,
+                winner_line: None,
+                game_over: true, // If no game, then it's effectively over
+            })
         },
     }
 }
 
 #[utoipa::path(
     post,
-    path = "/make_move",
+    path = "/game/move",
     request_body = MoveRequest,
     responses(
-        (status = 200, description = "移動が正常に実行され、最新のゲーム状態が返されました", body = BoardState),
-        (status = 400, description = "不正な移動です", body = ErrorResponse),
-        (status = 500, description = "サーバーエラー", body = ErrorResponse)
+        (status = 200, description = "Successful Response", body = BoardState),
+        (status = 422, description = "Validation Error", body = HTTPValidationError)
     ),
     tag = "Tic Tac Toe"
 )]
@@ -279,24 +305,31 @@ pub async fn make_move_handler(
                 Ok(bs) => HttpResponse::Ok().json(bs),
                 Err(e) => {
                     error!("Failed to get game status after AI move: {}", e);
-                    HttpResponse::InternalServerError().json(format!("Error: {}", e))
+                    HttpResponse::InternalServerError().json(ErrorResponse { detail: format!("Error: {}", e) })
                 }
             }
         },
         Err(e) => {
             error!("Failed to make move: {}", e);
-            HttpResponse::BadRequest().json(ErrorResponse {
-                detail: e.to_string(),
+            let validation_error = ValidationError {
+                loc: vec!["row".to_string(), "col".to_string()], // Generic location for move
+                msg: format!("{}", e),
+                r#type: "value_error".to_string(),
+            };
+            HttpResponse::UnprocessableEntity().json(HTTPValidationError {
+                detail: vec![validation_error],
             })
         },
     }
 }
 
+
+
 #[utoipa::path(
     get,
-    path = "/available_agents",
+    path = "/agents",
     responses(
-        (status = 200, description = "利用可能なエージェントのリスト", body = AvailableAgentsResponse)
+        (status = 200, description = "Successful Response", body = AvailableAgentsResponse)
     ),
     tag = "Tic Tac Toe"
 )]
@@ -308,4 +341,84 @@ pub async fn get_available_agents_handler(
     HttpResponse::Ok().json(AvailableAgentsResponse { agents })
 }
 
-// テスト用にグローバルなGameManagerをリセットする関数 is removed.
+    #[tokio::test]
+    async fn test_make_agent_move_no_game() {
+        // GIVEN: A GameManager with no game started
+        let mut gm = GameManager::new();
+
+        // WHEN: make_agent_move is called
+        let result = gm.make_agent_move().await;
+
+        // THEN: It should return an error
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().to_string(), "Game not started");
+    }
+
+    #[tokio::test]
+    async fn test_make_agent_move_with_game() {
+        // GIVEN: A GameManager with a game started (X is Random, O is Human)
+        let mut gm = GameManager::new();
+        let start_req = StartGameRequest {
+            human_player_symbol: Some(Player::O), // Oが人間プレイヤー
+            player_x_type: "Random".to_string(), // XがAI
+            player_o_type: "Human".to_string(),
+        };
+        gm.start_new_game(start_req).await.expect("Failed to start game");
+
+        // Xが最初のMoveを行い、Current PlayerがOになっているはず
+        let initial_board = gm.game.as_ref().unwrap().board;
+        assert_eq!(gm.game.as_ref().unwrap().current_player, Player::O);
+        assert!(!gm.game.as_ref().unwrap().game_over); // ゲームが終了していないことを確認
+
+        // WHEN: make_agent_move is called (Current Playerが人間なので、何も起きないはず)
+        let result = gm.make_agent_move().await;
+
+        // THEN: The result should be successful, but the board should not have changed
+        assert!(result.is_ok());
+        let board_state_after_no_move = result.unwrap();
+        assert_eq!(board_state_after_no_move.board, initial_board); // ボードが変化していないことを確認
+        assert_eq!(board_state_after_no_move.current_player, Player::O); // プレイヤーも変わらない
+
+        // FORCED: Current PlayerをAIに変更して、AIが動くことを確認するシナリオ
+        // テストのためにCurrent Playerを一時的にXに戻す
+        gm.game.as_mut().unwrap().current_player = Player::X;
+        let board_before_ai_move = gm.game.as_ref().unwrap().board;
+        assert_eq!(gm.game.as_ref().unwrap().current_player, Player::X);
+
+        // WHEN: make_agent_move is called (Xが手を打つ)
+        let result_ai_move = gm.make_agent_move().await;
+
+        // THEN: The move should be successful, and the board should have changed
+        assert!(result_ai_move.is_ok());
+        let board_state_after_ai_move = result_ai_move.unwrap();
+        assert_ne!(board_state_after_ai_move.board, board_before_ai_move); // ボードが変化していることを確認
+        assert_eq!(board_state_after_ai_move.current_player, Player::O); // Xが一手打ったのでOがCurrent
+    }
+
+    #[tokio::test]
+    async fn test_make_agent_move_game_over() {
+        // GIVEN: A GameManager with a game that is already over
+        let mut gm = GameManager::new();
+        let start_req = StartGameRequest {
+            human_player_symbol: Some(Player::O), // Oが人間プレイヤー
+            player_x_type: "Random".to_string(), // XがAI
+            player_o_type: "Human".to_string(),
+        };
+        gm.start_new_game(start_req).await.expect("Failed to start game");
+
+        // Manually make the game over for testing purposes
+        let game = gm.game.as_mut().unwrap();
+        game.game_over = true;
+        game.winner = Some(Player::X); // Simulate X winning
+        
+        // WHEN: make_agent_move is called
+        let result = gm.make_agent_move().await;
+
+        // THEN: The board state should be returned, but no move should be made (as game is over)
+        assert!(result.is_ok());
+        let board_state = result.unwrap();
+        assert!(board_state.game_over);
+        assert_eq!(board_state.winner, Some(Player::X));
+        // No change in current player or board if already game over
+        assert_eq!(board_state.current_player, Player::O); // Oのままであることを確認
+    }

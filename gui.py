@@ -1,10 +1,18 @@
 # gui.py
 import tkinter as tk
+from typing import Optional
 
 from game_logic import TicTacToe
 from settings_ui import SettingsUI
 from board_drawer import BoardDrawer
 from game_info_ui import GameInfoUI
+
+# Constants
+BG_COLOR = "#333333"
+RESULT_FG_COLOR = "yellow"
+RESULT_FONT = ("Arial", 20, "bold")
+CANVAS_SIZE = 300
+CELL_SIZE = 100
 
 
 class TicTacToeGUI:
@@ -12,7 +20,7 @@ class TicTacToeGUI:
     GUI class for the Tic Tac Toe game.
     """
 
-    def __init__(self, master, machine_first=False):
+    def __init__(self, master: tk.Tk, machine_first: bool = False):
         """
         Initializes the TicTacToeGUI.
 
@@ -22,35 +30,42 @@ class TicTacToeGUI:
         """
         self.master = master
         master.title("三目並べ")
-        master.configure(bg="#333333")
+        master.configure(bg=BG_COLOR)
 
         self.canvas = tk.Canvas(
-            master, width=300, height=300, bg="#333333", highlightthickness=0
+            master,
+            width=CANVAS_SIZE,
+            height=CANVAS_SIZE,
+            bg=BG_COLOR,
+            highlightthickness=0,
         )
         self.canvas.pack(pady=20)
 
         self.result_label = tk.Label(
             master,
             text="",
-            bg="#333333",
-            fg="yellow",
-            font=("Arial", 20, "bold"),
+            bg=BG_COLOR,
+            fg=RESULT_FG_COLOR,
+            font=RESULT_FONT,
         )
         self.result_label.pack(pady=10)
         self.result_label.pack_forget()
 
         # Settings to be saved (used on restart)
-        self.selected_player = None  # True: Human select, False: Machine select
-        self.selected_agent = (
+        self.selected_player: Optional[bool] = (
+            None  # True: Human select, False: Machine select
+        )
+        self.selected_agent: Optional[str] = (
             None  # "ランダム" or "Minimax" or "Database" or "QLearning"
         )
 
         self.settings_ui = SettingsUI(self, master)
         self.board_drawer = BoardDrawer(self, self.canvas)
         self.game_info_ui = GameInfoUI(self, master)
-        self.control_buttons_frame = None
-        self.stop_button = None
+        self.control_buttons_frame: Optional[tk.Frame] = None
+        self.stop_button: Optional[tk.Button] = None
         self.saved_settings = None
+        self.game: Optional[TicTacToe] = None
 
         # Set initial value based on machine_first argument
         if machine_first:
@@ -61,7 +76,7 @@ class TicTacToeGUI:
         self.settings_ui.build_settings_ui()
 
     def start_game(self):
-        """Starts the game."""
+        """Starts the game by initializing the board and agents."""
         if self.control_buttons_frame:
             self.control_buttons_frame.destroy()
         self.selected_player = self.settings_ui.player_var.get()
@@ -94,10 +109,10 @@ class TicTacToeGUI:
 
         # If the human is second, the agent goes first
         if not self.selected_player:
-            self.agent_first_move()
+            self.agent_turn()
 
         self.canvas.bind("<Button-1>", self.on_canvas_click)
-        self.control_buttons_frame = tk.Frame(self.master, bg="#333333")
+        self.control_buttons_frame = tk.Frame(self.master, bg=BG_COLOR)
         self.control_buttons_frame.pack(pady=10)
 
     def train_q_learning_agent(self):
@@ -108,7 +123,7 @@ class TicTacToeGUI:
             while not self.game.game_over:
                 self.agent_turn_for_training()
             self.update_q_table_after_game()
-            print(f"学習中: {episode+1}/{num_episodes}")
+            print(f"学習中: {episode + 1}/{num_episodes}")
         # 学習完了後、人間の操作を受け付ける
         self.canvas.bind("<Button-1>", self.on_canvas_click)
         self.control_buttons_frame = tk.Frame(self.master, bg="#333333")
@@ -161,30 +176,21 @@ class TicTacToeGUI:
                     current_state, action, reward, current_state
                 )
 
-    def agent_first_move(self):
-        """Handles the agent's first move."""
-        print("DEBUG: agent_first_move called.")
-        if self.game.current_player == self.game.agent_player:
-            current_agent_instance = self.game.get_current_agent()
-            if current_agent_instance:
-                print(
-                    f"DEBUG: Agent '{self.game.current_player}' is making the first move."
-                )
-                row, col = current_agent_instance.get_move(self.game.board)
-                if self.game.make_move(row, col):
-                    self.board_drawer.draw_board()
-                    self.game.switch_player()
-
     def on_canvas_click(self, event):
         """Handles the canvas click event."""
-        print("DEBUG: on_canvas_click called.")
         if self.game.current_player == self.game.human_player:
-            col = event.x // 100
-            row = event.y // 100
+            col = event.x // CELL_SIZE
+            row = event.y // CELL_SIZE
             self.cell_clicked(row, col)
 
-    def cell_clicked(self, row, col):
-        """Handles a cell click event."""
+    def cell_clicked(self, row: int, col: int):
+        """
+        Handles a cell click event.
+
+        Args:
+            row (int): The row index of the clicked cell.
+            col (int): The column index of the clicked cell.
+        """
         # ゲームが終了している場合は処理をスキップ
         if self.game.game_over:
             return
@@ -200,11 +206,9 @@ class TicTacToeGUI:
 
     def agent_turn(self):
         """Handles the agent's turn."""
-        print("DEBUG: agent_turn called.")
         if self.game.current_player == self.game.agent_player:
             current_agent_instance = self.game.get_current_agent()
             if current_agent_instance:
-                print(f"DEBUG: Agent '{self.game.current_player}' is making a move.")
                 # エージェントに現在のゲームボードの状態を渡して次の手を取得
                 row, col = current_agent_instance.get_move(self.game.board)
                 if self.game.make_move(row, col):
@@ -215,8 +219,13 @@ class TicTacToeGUI:
                         return
                     self.game.switch_player()
 
-    def game_over(self, winner):
-        """Handles the game over state."""
+    def game_over(self, winner: str):
+        """
+        Handles the game over state.
+
+        Args:
+            winner (str): The winner symbol ('X', 'O', or 'draw').
+        """
         self.canvas.unbind("<Button-1>")
         if self.game.winner_line:
             self.board_drawer.highlight_winner_cells(self.game.winner_line)
@@ -243,7 +252,7 @@ class TicTacToeGUI:
         self.settings_ui.build_settings_ui()
         self.settings_ui.load_settings(self.saved_settings)
 
-    def _create_agent_instance(self, agent_name, player_symbol):
+    def _create_agent_instance(self, agent_name: str, player_symbol: str):
         """
         Create an agent instance based on the agent name and player symbol.
         """

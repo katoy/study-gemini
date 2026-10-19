@@ -72,9 +72,9 @@ def evaluate(q_agent_player: str, opponent_class, opponent_name: str, num_games:
             game.switch_player()
 
     print(f"\n--- Q-Agent({q_agent_player}) vs {opponent_name}({opponent_player}) ---")
-    print(f"勝ち: {wins} ({wins/num_games*100:.1f}%)")
-    print(f"負け: {losses} ({losses/num_games*100:.1f}%)")
-    print(f"引き分け: {draws} ({draws/num_games*100:.1f}%)")
+    print(f"勝ち: {wins} ({wins / num_games * 100:.1f}%)")
+    print(f"負け: {losses} ({losses / num_games * 100:.1f}%)")
+    print(f"引き分け: {draws} ({draws / num_games * 100:.1f}%)")
 
 
 def main():

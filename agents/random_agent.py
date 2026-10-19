@@ -3,6 +3,7 @@ random_agent.py: Implements the Random agent.
 """
 
 import random
+from typing import List, Tuple, Optional
 
 from agents.base_agent import BaseAgent
 
@@ -21,15 +22,15 @@ class RandomAgent(BaseAgent):
         """
         super().__init__(player)
 
-    def get_move(self, board: list) -> tuple[int, int] | None:
+    def get_move(self, board: List[List[str]]) -> Optional[Tuple[int, int]]:
         """
         Gets a random move.
 
         Args:
-            board (list): The current game board.
+            board (List[List[str]]): The current game board.
 
         Returns:
-            tuple[int, int] | None: The (row, col) of the move.
+            Optional[Tuple[int, int]]: The (row, col) of the move, or None.
         """
         available_moves = []
         for row in range(3):

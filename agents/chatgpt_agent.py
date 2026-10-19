@@ -3,6 +3,7 @@ import openai
 import random
 import logging
 import json
+from typing import List, Dict, Optional, Tuple
 from agents.base_agent import BaseAgent
 
 # Configure logging to a file
@@ -12,26 +13,36 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
 
-print("DEBUG: chatgpt_agent.py is being loaded.")  # Debug print
-
 
 class ChatGPTAgent(BaseAgent):
+    """
+    Agent that uses ChatGPT to determine the best move.
+    """
+
     def __init__(
         self, player: str, model: str = "gpt-5.1", num_few_shot_examples: int = 5
     ):
+        """
+        Initializes the ChatGPTAgent.
+
+        Args:
+            player (str): The player this agent represents ("X" or "O").
+            model (str): The ChatGPT model to use.
+            num_few_shot_examples (int): The number of few-shot examples to include.
+        """
         super().__init__(player)
         self.client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         self.model = model
-        self.board_history = []  # For conversational context
+        self.board_history: List[str] = []  # For conversational context
         self.num_few_shot_examples = num_few_shot_examples
         self.few_shot_examples = self._load_few_shot_examples()
 
-    def _load_few_shot_examples(self) -> list[dict]:
+    def _load_few_shot_examples(self) -> List[Dict[str, str]]:
         """
         perfect_moves.json からランダムに例を取りつつ、
         「絶対にブロックしないと負ける」ような重要な盤面を手作りで追加する。
         """
-        examples: list[dict] = []
+        examples: List[Dict[str, str]] = []
         try:
             with open("perfect_moves.json", "r") as f:
                 perfect_moves_data = json.load(f)
@@ -53,7 +64,7 @@ class ChatGPTAgent(BaseAgent):
                 board_grid_str = ""
                 for i in range(0, 9, 3):
                     # 3 文字をそのまま使う: X, O, ' ' 等
-                    line = list(board_state_str[i:i + 3])
+                    line = list(board_state_str[i : i + 3])
                     # 空白は '.' に変換して 3 文字にする
                     line = [ch if ch in ["X", "O"] else "." for ch in line]
                     board_grid_str += "".join(line) + "\n"
@@ -113,7 +124,16 @@ class ChatGPTAgent(BaseAgent):
         examples.extend(handcrafted)
         return examples
 
-    def get_move(self, board: list) -> tuple[int, int] | None:
+    def get_move(self, board: List[List[str]]) -> Optional[Tuple[int, int]]:
+        """
+        Gets the best move from ChatGPT.
+
+        Args:
+            board (List[List[str]]): The current game board.
+
+        Returns:
+            Optional[Tuple[int, int]]: The (row, col) of the move, or None.
+        """
         # ボードを文字列に変換（'.' が空きマス）
         board_str = ""
         for r_idx, row in enumerate(board):
@@ -263,7 +283,18 @@ class ChatGPTAgent(BaseAgent):
             logging.error(f"Error calling ChatGPT API or parsing response: {e}")
             return self._find_random_valid_move(board)
 
-    def _find_random_valid_move(self, board: list) -> tuple[int, int] | None:
+    def _find_random_valid_move(
+        self, board: List[List[str]]
+    ) -> Optional[Tuple[int, int]]:
+        """
+        Falls back to a random valid move.
+
+        Args:
+            board (List[List[str]]): The current game board.
+
+        Returns:
+            Optional[Tuple[int, int]]: The (row, col) of the move, or None.
+        """
         empty_cells = []
         for r in range(3):
             for c in range(3):

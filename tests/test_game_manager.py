@@ -6,7 +6,6 @@ from server.game_manager import GameManager
 from agents.random_agent import RandomAgent
 from agents.perfect_agent import PerfectAgent
 from agents.minimax_agent import MinimaxAgent
-import os
 
 
 # Use a single GameManager instance for tests to avoid re-discovering agents
@@ -179,7 +178,9 @@ def test_run_ai_move_handles_agent_exception(gm_instance):
         game.current_player = "X"
 
         # Patch check_winner to see if it's called
-        with patch.object(game, "check_winner", wraps=game.check_winner) as mock_check_winner:
+        with patch.object(
+            game, "check_winner", wraps=game.check_winner
+        ) as mock_check_winner:
             returned_game = gm_instance.run_ai_move(game)
             assert returned_game is game
             mock_check_winner.assert_called_once()
@@ -192,7 +193,9 @@ def test_run_ai_move_no_move_returned(gm_instance):
     game = TicTacToe(agent_x=mock_agent, agent_o=None, human_player="O")
     game.current_player = "X"
 
-    with patch.object(game, "check_winner", wraps=game.check_winner) as mock_check_winner:
+    with patch.object(
+        game, "check_winner", wraps=game.check_winner
+    ) as mock_check_winner:
         returned_game = gm_instance.run_ai_move(game)
         assert returned_game is game
         mock_check_winner.assert_called_once()

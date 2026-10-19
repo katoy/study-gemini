@@ -3,7 +3,7 @@ use actix_web::{test, App, web};
 use std::sync::Arc;
 use tic_tac_toe_server_rust::{
     game_logic::Player,
-    schemas::{StartGameRequest, MoveRequest, BoardState, AvailableAgentsResponse},
+    schemas::{StartGameRequest, MoveRequest, BoardState, AvailableAgentsResponse, HTTPValidationError},
     configure_app,
     server,
 };
@@ -75,7 +75,7 @@ async fn test_game_flow() {
         .to_request();
     let resp = test::call_service(&app, req).await;
 
-    assert_eq!(resp.status(), 400);
+    assert_eq!(resp.status(), 422); // Changed from 400 to 422
 }
 
 #[actix_web::test]
@@ -141,9 +141,9 @@ async fn test_start_game_handler_error_invalid_agent_type() {
         .to_request();
     let resp = test::call_service(&app, req).await;
 
-    assert_eq!(resp.status(), 500); // Internal Server Error
-    let body = test::read_body(resp).await;
-    assert!(String::from_utf8_lossy(&body).contains(r#"detail":"Error: Unknown agent type: UnknownAgent"#));
+    assert_eq!(resp.status(), 422); // Changed from 500 to 422
+    let body: HTTPValidationError = test::read_body_json(resp).await;
+    assert!(body.detail[0].msg.contains("Unknown agent type: UnknownAgent"));
 }
 
 #[actix_web::test]
@@ -158,9 +158,11 @@ async fn test_get_game_status_handler_error_no_game() {
     let req = test::TestRequest::get().uri("/game/status").to_request();
     let resp = test::call_service(&app, req).await;
 
-    assert_eq!(resp.status(), 404); // Not Found
-    let body = test::read_body(resp).await; // この行を追加
-    assert!(String::from_utf8_lossy(&body).contains(r#"detail":"Error: Game not started"#));
+    assert_eq!(resp.status(), 200); // Changed from 404 to 200 with default BoardState
+    let body: BoardState = test::read_body_json(resp).await;
+    assert!(body.game_over);
+    assert_eq!(body.board[0][0], Player::None); // Default empty board
+    assert_eq!(body.current_player, Player::X); // Default starting player
 }
 
 #[actix_web::test]
@@ -179,7 +181,53 @@ async fn test_make_move_handler_error_no_game() {
         .to_request();
     let resp = test::call_service(&app, req).await;
 
-    assert_eq!(resp.status(), 400); // Bad Request
-    let body = test::read_body(resp).await;
-    assert!(String::from_utf8_lossy(&body).contains(r#"detail":"Game not started"#));
+    assert_eq!(resp.status(), 422); // Changed from 400 to 422
+    let body: HTTPValidationError = test::read_body_json(resp).await;
+    assert!(body.detail[0].msg.contains("Game not started"));
+}
+
+#[actix_web::test]
+async fn test_make_move_handler_error_invalid_move() {
+    let game_manager = web::Data::new(Arc::new(
+        tokio::sync::Mutex::new(server::GameManager::new()),
+    ));
+    let app = test::init_service(
+        App::new()
+            .app_data(game_manager.clone())
+            .configure(configure_app),
+    )
+    .await;
+
+    // Start a game
+    let start_req = StartGameRequest {
+        human_player_symbol: Some(Player::X),
+        player_x_type: "Human".to_string(),
+        player_o_type: "Human".to_string(),
+    };
+    let req = test::TestRequest::post()
+        .uri("/game/start")
+        .set_json(&start_req)
+        .to_request();
+    let _ = test::call_service(&app, req).await;
+
+    // Move 1: X to (0, 0)
+    let move_req = MoveRequest { row: 0, col: 0 };
+    let req = test::TestRequest::post()
+        .uri("/game/move")
+        .set_json(&move_req)
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert!(resp.status().is_success());
+
+    // Move 2: O to (0, 0) -> Should fail
+    let move_req = MoveRequest { row: 0, col: 0 };
+    let req = test::TestRequest::post()
+        .uri("/game/move")
+        .set_json(&move_req)
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+
+    assert_eq!(resp.status(), 422);
+    let body: HTTPValidationError = test::read_body_json(resp).await;
+    assert!(body.detail[0].msg.contains("Cell is already occupied"));
 }

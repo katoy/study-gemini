@@ -21,6 +21,8 @@ use rand::{Rng, thread_rng}; // QLearningAgentの乱数生成用
 // Agent Trait (BaseAgent相当)
 //==============================================================================
 
+// async_trait マクロが生成するコードに double_must_use が出るため抑制する
+#[allow(clippy::double_must_use)]
 #[async_trait]
 pub trait Agent: Send + Sync {
     fn get_player(&self) -> Player;

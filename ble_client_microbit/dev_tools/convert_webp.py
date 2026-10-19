@@ -2,6 +2,7 @@ import os
 import shutil
 import subprocess
 
+
 def convert_webp_to_mp4(webp_path, output_path, fps=10):
     if not os.path.exists(webp_path):
         print(f"Error: {webp_path} not found.")
@@ -19,22 +20,17 @@ def convert_webp_to_mp4(webp_path, output_path, fps=10):
         # And output as a sequence of PNGs
         # frame_%04d.png tells magick to number them.
         output_pattern = os.path.join(temp_dir, "frame_%04d.png")
-        
+
         # Try 'magick' first, then 'convert'
         magick_cmd = "magick"
         if shutil.which("magick") is None:
             magick_cmd = "convert"
             if shutil.which("convert") is None:
-                 print("Error: ImageMagick (magick or convert) is not found.")
-                 return
+                print("Error: ImageMagick (magick or convert) is not found.")
+                return
 
-        cmd_extract = [
-            magick_cmd,
-            webp_path,
-            "-coalesce",
-            output_pattern
-        ]
-        
+        cmd_extract = [magick_cmd, webp_path, "-coalesce", output_pattern]
+
         print(f"Running: {' '.join(cmd_extract)}")
         res = subprocess.run(cmd_extract, capture_output=True)
         if res.returncode != 0:
@@ -55,13 +51,18 @@ def convert_webp_to_mp4(webp_path, output_path, fps=10):
         cmd = [
             "ffmpeg",
             "-y",
-            "-framerate", str(fps),
-            "-i", output_pattern,
-            "-c:v", "libx264",
-            "-pix_fmt", "yuv420p",
+            "-framerate",
+            str(fps),
+            "-i",
+            output_pattern,
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
             # Ensure dimensions are even
-            "-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2",
-            output_path
+            "-vf",
+            "pad=ceil(iw/2)*2:ceil(ih/2)*2",
+            output_path,
         ]
 
         print(f"Running command: {' '.join(cmd)}")
@@ -80,8 +81,10 @@ def convert_webp_to_mp4(webp_path, output_path, fps=10):
         if os.path.exists(temp_dir):
             shutil.rmtree(temp_dir)
 
+
 if __name__ == "__main__":
     import sys
+
     if len(sys.argv) > 1:
         webp_source = sys.argv[1]
     else:

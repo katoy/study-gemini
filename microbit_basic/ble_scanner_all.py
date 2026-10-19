@@ -16,5 +16,6 @@ async def main():
         device_name = device.name or "（名前なし）"
         print(f"  - アドレス: {device.address}, 名前: {device_name}")
 
+
 if __name__ == "__main__":
     asyncio.run(main())

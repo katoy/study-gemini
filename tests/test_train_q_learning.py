@@ -1,11 +1,9 @@
 import unittest
-from unittest.mock import MagicMock, patch, call, PropertyMock
-import sys
+from unittest.mock import MagicMock, patch, PropertyMock
 from train_q_learning import (
     train_q_learning_agent,
     main,
 )
-from agents.q_learning_agent import QLearningAgent
 
 
 class TestTrainQLearning(unittest.TestCase):

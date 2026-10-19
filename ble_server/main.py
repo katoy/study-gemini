@@ -1,3 +1,4 @@
+import argparse
 import asyncio
 import logging
 import sys
@@ -11,17 +12,16 @@ from ble_server.game_adapter import GameAdapter
 
 # Nordic UART Service (NUS) UUIDs
 UART_SERVICE_UUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
-UART_RX_CHAR_UUID = "6E400003-B5A3-F393-E0A9-E50E24DCCA9E" # Write (Mac -> micro:bit)
-UART_TX_CHAR_UUID = "6E400002-B5A3-f393-e0a9-e50e24dcca9e" # Notify (micro:bit -> Mac)
+UART_RX_CHAR_UUID = "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"  # Write (Mac -> micro:bit)
+UART_TX_CHAR_UUID = "6E400002-B5A3-f393-e0a9-e50e24dcca9e"  # Notify (micro:bit -> Mac)
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.StreamHandler(sys.stdout)
-    ]
+    handlers=[logging.StreamHandler(sys.stdout)],
 )
 logger = logging.getLogger(__name__)
+
 
 class BLEGameServer:
     def __init__(self, default_ai_agent="Random"):
@@ -44,7 +44,9 @@ class BLEGameServer:
 
                 logger.info(f"Found {device.name} ({device.address}). Connecting...")
 
-                async with BleakClient(device, disconnected_callback=self.on_disconnect) as client:
+                async with BleakClient(
+                    device, disconnected_callback=self.on_disconnect
+                ) as client:
                     self.client = client
                     self.connected = True
                     logger.info("Connected!")
@@ -74,7 +76,7 @@ class BLEGameServer:
     async def on_notification(self, sender, data: bytearray):
         """Callback for when data is received from the micro:bit."""
         try:
-            text = data.decode('utf-8').strip()
+            text = data.decode("utf-8").strip()
             if not text:
                 return
             logger.info(f"RX: {text}")
@@ -106,15 +108,21 @@ class BLEGameServer:
         try:
             message = f"{response}\n"
             logger.info(f"TX: {message.strip()}")
-            await self.client.write_gatt_char(UART_RX_CHAR_UUID, message.encode('utf-8'))
+            await self.client.write_gatt_char(
+                UART_RX_CHAR_UUID, message.encode("utf-8")
+            )
         except Exception as e:
             logger.error(f"Error sending update: {e}")
 
-import argparse
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="BLE Tic-Tac-Toe Server")
-    parser.add_argument("--agent", type=str, default="Random", help="AI Agent to play against (default: Random)")
+    parser.add_argument(
+        "--agent",
+        type=str,
+        default="Random",
+        help="AI Agent to play against (default: Random)",
+    )
     args = parser.parse_args()
 
     server = BLEGameServer(default_ai_agent=args.agent)

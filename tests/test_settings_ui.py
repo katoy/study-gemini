@@ -18,7 +18,6 @@ class TestSettingsUI(unittest.TestCase):
 
     def test_build_settings_ui(self):
         self.settings_ui.build_settings_ui()
-        start_button = self.settings_ui.start_button
         # UIのテストではinvoke()の代わりにcommandを直接呼ぶ方が安定することがある
         self.settings_ui.start_game()
         self.mock_gui.start_game.assert_called_once()

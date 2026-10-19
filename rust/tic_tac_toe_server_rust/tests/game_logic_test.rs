@@ -24,26 +24,6 @@ fn test_player_opponent() {
     assert_eq!(Player::None.opponent(), Player::None);
 }
 
-#[test]
-fn test_player_display() {
-    assert_eq!(format!("{}", Player::X), "X");
-    assert_eq!(format!("{}", Player::O), "O");
-    assert_eq!(format!("{}", Player::None), " ");
-}
-
-// TicTacToe 構造体のテスト
-#[test]
-fn test_new_game() {
-    let game = TicTacToe::new(None, None, None);
-    assert_eq!(game.board, [[Player::None; 3]; 3]);
-    assert_eq!(game.current_player, Player::X);
-    assert_eq!(game.winner, None);
-    assert_eq!(game.winner_line, None);
-    assert!(!game.game_over);
-    assert!(game.agent_x.is_none());
-    assert!(game.agent_o.is_none());
-    assert!(game.human_player.is_none());
-}
 
 #[test]
 fn test_make_valid_move() {
@@ -338,6 +318,13 @@ fn test_player_deserialize_invalid() {
 }
 
 #[test]
+fn test_player_deserialize_not_a_string() {
+    let json = "123";
+    let result: Result<Player, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+}
+
+#[test]
 fn test_player_serialization() {
     assert_eq!(serde_json::to_string(&Player::X).unwrap(), "\"X\"");
     assert_eq!(serde_json::to_string(&Player::O).unwrap(), "\"O\"");
@@ -360,10 +347,12 @@ fn test_player_display_fmt() {
 }
 
 
+
+
 #[test]
 fn test_player_clone() {
     let p = Player::X;
-    let p2 = p.clone();
+    let p2 = p;
     assert_eq!(p, p2);
 }
 

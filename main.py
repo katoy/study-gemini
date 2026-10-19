@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Main entry point for the Tic Tac Toe game.
+This script initializes the GUI application.
 """
 
 import tkinter as tk
@@ -9,9 +10,11 @@ import argparse
 from gui import TicTacToeGUI
 
 
-def main():
+def main() -> None:
     """
-    Creates the main window and starts the Tic Tac Toe game.
+    Creates the main window and starts the Tic Tac Toe game loop.
+
+    Parses command line arguments to determine if the machine should play first.
     """
     parser = argparse.ArgumentParser(description="三目並べゲーム")
     parser.add_argument(

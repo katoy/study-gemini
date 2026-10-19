@@ -1,5 +1,6 @@
 import json
 import os
+from typing import List, Tuple, Optional, Dict
 from agents.base_agent import BaseAgent
 import fast_trainer  # Import the compiled Cython module
 import numpy as np  # Add numpy import
@@ -14,13 +15,13 @@ class QLearningAgent(BaseAgent):
     def __init__(
         self,
         player: str,
-        learning_rate=0.1,
-        discount_factor=0.9,
-        exploration_rate=1.0,
-        min_exploration_rate=0.05,
-        optimistic_initial_value=0.0,
-        q_table_file="q_table.json",
-        is_training=True,
+        learning_rate: float = 0.1,
+        discount_factor: float = 0.9,
+        exploration_rate: float = 1.0,
+        min_exploration_rate: float = 0.05,
+        optimistic_initial_value: float = 0.0,
+        q_table_file: str = "q_table.json",
+        is_training: bool = True,
     ):
         super().__init__(player)
         self.q_table_file = q_table_file
@@ -38,23 +39,23 @@ class QLearningAgent(BaseAgent):
         self.load_q_table()
 
     @property
-    def min_exploration_rate(self):
+    def min_exploration_rate(self) -> float:
         return self._fast_agent.min_exploration_rate
 
     @min_exploration_rate.setter
-    def min_exploration_rate(self, value):
+    def min_exploration_rate(self, value: float):
         self._fast_agent.min_exploration_rate = value
 
     @property
-    def exploration_rate(self):
+    def exploration_rate(self) -> float:
         return self._fast_agent.exploration_rate
 
     @exploration_rate.setter
-    def exploration_rate(self, value):
+    def exploration_rate(self, value: float):
         self._fast_agent.exploration_rate = value
 
     @property
-    def q_table(self):
+    def q_table(self) -> Dict[str, List[float]]:
         # Returns a copy of the q_table for external access
         return {
             state: self._fast_agent.q_table.table[state].tolist()
@@ -62,7 +63,7 @@ class QLearningAgent(BaseAgent):
         }
 
     @q_table.setter
-    def q_table(self, value: dict):
+    def q_table(self, value: Dict[str, List[float]]):
         # Expects a dict with lists and converts to ndarray for Cython
         converted_table = {
             state: np.array(q_values, dtype=np.float64)
@@ -70,19 +71,26 @@ class QLearningAgent(BaseAgent):
         }
         self._fast_agent.q_table.set_table(converted_table)
 
-    def get_move(self, board: list) -> tuple[int, int] | None:
+    def get_move(self, board: List[List[str]]) -> Optional[Tuple[int, int]]:
         """
         Uses the Cython-optimized get_move_py function.
         """
         return fast_trainer.get_move_py(self._fast_agent, board)
 
-    def decay_exploration_rate(self, episode, total_episodes):
+    def decay_exploration_rate(self, episode: int, total_episodes: int):
         """Delegates to the fast Cython method."""
         # The Cython method handles the decay.
         # Ensure the FastQLearningAgent's decay_exploration_rate is updated as well.
         self._fast_agent.decay_exploration_rate(episode, total_episodes)
 
-    def update_q_table(self, state, action, reward, next_state, is_terminal=False):
+    def update_q_table(
+        self,
+        state: str,
+        action: int,
+        reward: float,
+        next_state: str,
+        is_terminal: bool = False,
+    ):
         """Delegates to the fast Cython method."""
         self._fast_agent.update_q_table(state, action, reward, next_state, is_terminal)
 

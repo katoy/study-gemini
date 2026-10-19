@@ -9,3 +9,5 @@ exclude_lines =
     if __name__ == "__main__":
 omit =
     tests/*
+    */tests/*
+    setup.py
