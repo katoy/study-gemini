@@ -69,7 +69,7 @@ class TestPerfectAgent(unittest.TestCase):
         # とりあえず、完全に埋まった盤面を試す
         board = [["X", "O", "X"], ["X", "O", "O"], ["O", "X", "X"]]
         try:
-            move = self.agent.get_move(board)
+            self.agent.get_move(board)
             # best_move_index == -1の場合はKeyErrorが発生するはず
         except KeyError as e:
             # "The game is over"というメッセージを含むKeyErrorを期待

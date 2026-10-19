@@ -2,7 +2,6 @@
 
 use tic_tac_toe_server_rust::schemas::{StartGameRequest, BoardState, MoveRequest, AvailableAgentsResponse};
 use tic_tac_toe_server_rust::game_logic::Player;
-use serde_json;
 
 #[test]
 fn test_start_game_request_serialization() {
@@ -75,7 +74,7 @@ fn test_board_state_deserialization() {
     assert_eq!(bs.current_player, Player::O);
     assert_eq!(bs.winner, Some(Player::X));
     assert_eq!(bs.winner_line, Some([(0,0), (1,1), (2,2)]));
-    assert_eq!(bs.game_over, true);
+    assert!(bs.game_over);
 
     let json_draw = r#"{
         "board":[["X","O","X"],["X","O","O"],["O","X","X"]],

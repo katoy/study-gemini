@@ -123,7 +123,7 @@ class TicTacToeGUI:
             while not self.game.game_over:
                 self.agent_turn_for_training()
             self.update_q_table_after_game()
-            print(f"学習中: {episode+1}/{num_episodes}")
+            print(f"学習中: {episode + 1}/{num_episodes}")
         # 学習完了後、人間の操作を受け付ける
         self.canvas.bind("<Button-1>", self.on_canvas_click)
         self.control_buttons_frame = tk.Frame(self.master, bg="#333333")

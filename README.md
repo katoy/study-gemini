@@ -44,6 +44,7 @@
 *   `verify_q_learning_strength.py`: 学習済みQ学習エージェントの強さ評価スクリプト。
 *   `evaluate_models.py`: 2つのQ学習モデル同士を対戦させて優劣を評価するスクリプトです。
 *   `create_database.py`: `perfect_agent`が使用する必勝手データベース（`tictactoe.db`）を作成します。
+*   `ble_server/`: micro:bit と BLE (Nordic UART Service) で通信する macOS 向けサーバー。詳細は [ble_server/README.md](ble_server/README.md) を参照してください。
 
 ## 実装されているエージェント
 
@@ -159,6 +160,10 @@ OPENAI_API_KEY='your_openai_api_key'
     ```bash
     pip install -r requirements.txt
     ```
+    `ble_server/` のテストも実行する場合は、追加で以下をインストールしてください。
+    ```bash
+    pip install bleak pytest-asyncio
+    ```
 
 2.  **Rust ツールチェインのインストール:**
     Rustプロジェクトをビルドおよびテストするためには、Rustツールチェインが必要です。`rustup`を使用してインストールしてください。
@@ -186,7 +191,7 @@ OPENAI_API_KEY='your_openai_api_key'
 
 #### Pythonテストの実行
 
-`pytest` を使ってPythonコードのテストを実行します。
+`pytest` を使ってPythonコードのテストを実行します。`tests/` と `ble_server/tests/` のテストが実行されます。
 ```bash
 pytest
 ```
@@ -206,7 +211,7 @@ cargo test
 
 #### Pythonカバレッジの集計
 
-`pytest-cov` を使ってPythonコードのカバレッジを測定します。
+`pytest-cov` を使ってPythonコードのカバレッジを測定します。計測対象と除外設定（テストコード、`setup.py`、`if __name__ == "__main__":` ブロック）は `.coveragerc` で管理しています。
 ```bash
 # カバレッジを計測し、コンソールに表示
 pytest --cov=. --cov-report=term-missing
@@ -232,13 +237,15 @@ open target/llvm-cov/html/index.html # macOSの場合
 
 ### Lintチェックの実行
 
-プロジェクトのコード品質を保つために、`flake8` (Python) と `cargo clippy` (Rust) を使用してLintチェックを行っています。
+プロジェクトのコード品質を保つために、`ruff` (Python) と `cargo clippy` (Rust) を使用してLintチェックを行っています。
 
 #### Python Lintチェック
 
 ```bash
-# testファイルなどを除外してLintチェックを実行
-flake8 --exclude=tests,__pycache__,.pytest_cache,build,htmlcov,venv,.venv --max-line-length=120 --statistics --count .
+ruff check .
+
+# 自動修正できる指摘を修正
+ruff check . --fix
 ```
 
 #### Rust Lintチェック
@@ -250,10 +257,14 @@ cargo clippy
 
 ### コードフォーマットの実行
 
-本プロジェクトでは、コードフォーマッターとして `black` (Python) を使用しています。
+本プロジェクトでは、コードフォーマッターとして `ruff format` (Python) を使用しています。
 
 ```bash
-black .
+# フォーマットを適用
+ruff format .
+
+# フォーマット違反の確認のみ
+ruff format --check .
 ```
 
 ### コード品質とカバレッジサマリー
@@ -262,30 +273,53 @@ black .
 
 #### Python関連コード
 
-| ファイル名        | Stmts | Miss | Cover    |
-| :---------------- | :---- | :--- | :------- |
-| `board_drawer.py` | 37    | 0    | **100%** |
-| `game_info_ui.py` | 18    | 0    | **100%** |
-| `settings_ui.py`  | 49    | 0    | **100%** |
-| `gui.py`          | 167   | 45   | **73%**  |
-| `CUI/client.py`   | 13    | 0    | **100%** |
-| `CUI/cui_display.py` | 21    | 0    | **100%** |
-| `CUI/tic_tac_toe_client.py` | 118   | 0    | **100%** |
-| `server/game_manager.py` | 76    | 7    | **91%**  |
-| `server/schemas.py`      | 24    | 0    | **100%** |
-| `server/server.py`       | 30    | 0    | **100%** |
+`.coveragerc` の計測対象となる全 Python ファイル（33 ファイル、1536 ステートメント）でカバレッジ **100%** です。
+
+| ファイル名                        | Stmts | Miss | Cover    |
+| :-------------------------------- | :---- | :--- | :------- |
+| `main.py`                         | 10    | 0    | **100%** |
+| `gui.py`                          | 169   | 0    | **100%** |
+| `game_logic.py`                   | 49    | 0    | **100%** |
+| `board_drawer.py`                 | 37    | 0    | **100%** |
+| `game_info_ui.py`                 | 18    | 0    | **100%** |
+| `settings_ui.py`                  | 46    | 0    | **100%** |
+| `agent_discovery.py`              | 30    | 0    | **100%** |
+| `agents/base_agent.py`            | 22    | 0    | **100%** |
+| `agents/chatgpt_agent.py`         | 109   | 0    | **100%** |
+| `agents/database_agent.py`        | 31    | 0    | **100%** |
+| `agents/minimax_agent.py`         | 45    | 0    | **100%** |
+| `agents/perfect_agent.py`         | 26    | 0    | **100%** |
+| `agents/q_learning_agent.py`      | 50    | 0    | **100%** |
+| `agents/random_agent.py`          | 15    | 0    | **100%** |
+| `CUI/client.py`                   | 13    | 0    | **100%** |
+| `CUI/cui_display.py`              | 21    | 0    | **100%** |
+| `CUI/tic_tac_toe_client.py`       | 98    | 0    | **100%** |
+| `server/game_manager.py`          | 80    | 0    | **100%** |
+| `server/schemas.py`               | 17    | 0    | **100%** |
+| `server/server.py`                | 40    | 0    | **100%** |
+| `ble_server/game_adapter.py`      | 94    | 0    | **100%** |
+| `ble_server/main.py`              | 71    | 0    | **100%** |
+| `create_database.py`              | 101   | 0    | **100%** |
+| `train_q_learning.py`             | 59    | 0    | **100%** |
+| `verify_q_learning_strength.py`   | 55    | 0    | **100%** |
+| `evaluate_models.py`              | 76    | 0    | **100%** |
+| `generate_screenshots.py`         | 74    | 0    | **100%** |
+| `generate_cui_screenshot.py`      | 30    | 0    | **100%** |
+| `generate_openapi.py`             | 11    | 0    | **100%** |
+| `calculate_flutter_coverage.py`   | 39    | 0    | **100%** |
+| **合計**                          | **1536** | **0** | **100%** |
 
 #### Rust関連コード (`rust/CUI`)
 
 | ファイル名        | 関数カバレッジ | 行カバレッジ |
 | :---------------- | :--- | :--- |
-| `src/display.rs` | 100.00% | 80.00% |
-| `src/game_client.rs` | 100.00% | 94.44% |
-| `src/lib.rs` | 100.00% | 68.42% |
-| `src/main.rs` | 0.00% | 0.00% |
-| **合計** | **91.67%** | **74.19%** |
+| `src/display.rs` | 100.00% | 100.00% |
+| `src/game_client.rs` | 100.00% | 98.86% |
+| `src/lib.rs` | 100.00% | 98.31% |
+| `src/main.rs` | 33.33% | 20.00% |
+| **合計** | **91.67%** | **93.83%** |
 
-Lintチェックについても、主要なPythonファイルにおける`flake8`の警告は解消済みです。Rustプロジェクトでも`cargo clippy`の警告は解消済みです。
+Lintチェックについて、Python は `ruff check` と `ruff format --check` の指摘はありません。Rust も `rust/CUI` と `rust/tic_tac_toe_server_rust` の両方で `cargo clippy --all-targets` の警告はありません。
 
 ## ライセンス
 

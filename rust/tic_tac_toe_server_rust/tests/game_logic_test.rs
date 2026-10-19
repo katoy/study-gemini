@@ -352,7 +352,7 @@ fn test_player_display_fmt() {
 #[test]
 fn test_player_clone() {
     let p = Player::X;
-    let p2 = p.clone();
+    let p2 = p;
     assert_eq!(p, p2);
 }
 

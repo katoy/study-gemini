@@ -53,10 +53,7 @@ async def main():
 
         # micro:bit -> Mac の通知を有効化
         await client.start_notify(UART_TX, notification_handler)
-        print(
-            "Waiting for data... "
-            "(micro:bit の A/B/A+B ボタンを押すと応答します)"
-        )
+        print("Waiting for data... (micro:bit の A/B/A+B ボタンを押すと応答します)")
 
         # イベントループを維持
         while True:

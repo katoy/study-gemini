@@ -154,7 +154,7 @@ mod tests {
     async fn test_run_error_handling() {
         // GIVEN: A mock bootstrap function that always returns an error
         let mock_bootstrap_fn = || {
-            Err(std::io::Error::new(std::io::ErrorKind::Other, "Mock bootstrap error"))
+            Err(std::io::Error::other("Mock bootstrap error"))
         };
 
         // WHEN: `run_with_bootstrap_fn` is called with the mock function

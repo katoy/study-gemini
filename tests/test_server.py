@@ -1,9 +1,9 @@
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from server.server import app, get_game_manager
-from server.game_manager import GameManager, PLAYER_X, PLAYER_O
+from server.game_manager import GameManager
 
 
 @pytest.fixture(scope="function")

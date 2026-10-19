@@ -32,8 +32,7 @@ impl io::Write for CountingErrorWriter {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.writes_count += 1;
         if self.writes_count > self.writes_before_error {
-            Err(io::Error::new(
-                io::ErrorKind::Other,
+            Err(io::Error::other(
                 "simulated write error",
             ))
         } else {
@@ -50,7 +49,7 @@ struct ErrorReader;
 
 impl io::Read for ErrorReader {
     fn read(&mut self, _buf: &mut [u8]) -> io::Result<usize> {
-        Err(io::Error::new(io::ErrorKind::Other, "simulated read error"))
+        Err(io::Error::other("simulated read error"))
     }
 }
 
@@ -60,7 +59,7 @@ impl io::BufRead for ErrorReader {
     }
     fn consume(&mut self, _amt: usize) {}
     fn read_line(&mut self, _buf: &mut String) -> io::Result<usize> {
-        Err(io::Error::new(io::ErrorKind::Other, "simulated read error"))
+        Err(io::Error::other("simulated read error"))
     }
 }
 
@@ -68,37 +67,32 @@ impl io::BufRead for ErrorReader {
 fn test_get_play_again_choice() {
     let mut input = "y\n".as_bytes();
     let mut output = Vec::new();
-    assert_eq!(
-        get_play_again_choice(&mut input, &mut output).unwrap(),
-        true
+    assert!(
+        get_play_again_choice(&mut input, &mut output).unwrap()
     );
 
     let mut input = "Y\n".as_bytes();
     let mut output = Vec::new();
-    assert_eq!(
-        get_play_again_choice(&mut input, &mut output).unwrap(),
-        true
+    assert!(
+        get_play_again_choice(&mut input, &mut output).unwrap()
     );
 
     let mut input = "n\n".as_bytes();
     let mut output = Vec::new();
-    assert_eq!(
-        get_play_again_choice(&mut input, &mut output).unwrap(),
-        false
+    assert!(
+        !get_play_again_choice(&mut input, &mut output).unwrap()
     );
 
     let mut input = "yes\n".as_bytes();
     let mut output = Vec::new();
-    assert_eq!(
-        get_play_again_choice(&mut input, &mut output).unwrap(),
-        false
+    assert!(
+        !get_play_again_choice(&mut input, &mut output).unwrap()
     );
 
     let mut input = "\n".as_bytes();
     let mut output = Vec::new();
-    assert_eq!(
-        get_play_again_choice(&mut input, &mut output).unwrap(),
-        false
+    assert!(
+        !get_play_again_choice(&mut input, &mut output).unwrap()
     );
 }
 
@@ -121,7 +115,7 @@ fn test_get_play_again_choice_eof() {
     let mut input = "".as_bytes();
     let mut output = Vec::new();
     // EOF returns Ok(false)
-    assert_eq!(get_play_again_choice(&mut input, &mut output).unwrap(), false);
+    assert!(!get_play_again_choice(&mut input, &mut output).unwrap());
 }
 
 #[tokio::test]

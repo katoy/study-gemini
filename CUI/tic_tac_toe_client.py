@@ -84,7 +84,7 @@ class TicTacToeClient:
         while True:
             print(f"\nChoose agent type for player {player_char}:")
             for i, agent_type in enumerate(agent_types):
-                print(f"{i+1}. {agent_type}")
+                print(f"{i + 1}. {agent_type}")
             try:
                 choice_num = int(input(f"Enter number (1-{len(agent_types)}): "))
                 if 1 <= choice_num <= len(agent_types):
@@ -159,7 +159,9 @@ class TicTacToeClient:
                     game_state = self._send_request(
                         "POST", "game/move", {"row": row, "col": col}
                     )
-                    print(f"DEBUG: game_state after human move: {game_state}")  # Debug print
+                    print(
+                        f"DEBUG: game_state after human move: {game_state}"
+                    )  # Debug print
                     display_board(game_state)
                 except (
                     ValueError
@@ -168,10 +170,9 @@ class TicTacToeClient:
                 except requests.exceptions.RequestException:  # pragma: no cover
                     break  # Fatal error, exit game loop
             else:
-                # Agent moves are handled by the server with the previous request.
-                # Just display the current board state and proceed.
-                print(f"Player {current_player} (Agent) has made a move.")
-                print(f"DEBUG: game_state for agent turn (unchanged from previous): {game_state}")  # Debug print
-                # The game_state is already updated from the previous request (start_game or human move)
-                # No need to call game/status again here.
-                # The loop will naturally re-evaluate game_state["game_over"] and is_human_turn.
+                # サーバーは game/start と game/move の応答前にエージェントの手番をすべて処理する。
+                # ここに来るのはサーバー側で進行が止まった場合で、待っても状態は変わらないため終了する。
+                print(
+                    f"Error: The server did not process Player {current_player} (Agent)'s move. Ending the game."
+                )
+                break

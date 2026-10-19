@@ -1,5 +1,5 @@
-
 import os
+
 
 def create_x_svg(filename):
     svg_content = """<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -11,6 +11,7 @@ def create_x_svg(filename):
         f.write(svg_content)
     print(f"Created {filename}")
 
+
 def create_o_svg(filename):
     svg_content = """<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
   <rect width="100" height="100" fill="#f0f0f0"/>
@@ -20,12 +21,14 @@ def create_o_svg(filename):
         f.write(svg_content)
     print(f"Created {filename}")
 
+
 def main():
     output_dir = "/Users/katoy/github/study-gemini/mit_app_inventor/images"
     os.makedirs(output_dir, exist_ok=True)
-    
+
     create_x_svg(os.path.join(output_dir, "x_mark.svg"))
     create_o_svg(os.path.join(output_dir, "o_mark.svg"))
+
 
 if __name__ == "__main__":
     main()

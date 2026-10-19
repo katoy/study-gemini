@@ -1,6 +1,7 @@
 import random
 from .base_agent import BaseAgent
 
+
 class RandomAgent(BaseAgent):
     def __init__(self, symbol):
         super().__init__(symbol)

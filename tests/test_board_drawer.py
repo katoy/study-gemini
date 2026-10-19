@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock
 import tkinter as tk
 
 from board_drawer import BoardDrawer

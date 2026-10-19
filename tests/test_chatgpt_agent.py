@@ -2,7 +2,6 @@ import pytest
 import os
 from unittest.mock import MagicMock, patch
 from agents.chatgpt_agent import ChatGPTAgent
-from agents.base_agent import BaseAgent
 
 
 # Mock the OpenAI client for testing purposes

@@ -1,7 +1,5 @@
 import unittest
-from unittest.mock import MagicMock, patch, call, mock_open
-import tempfile
-import os
+from unittest.mock import MagicMock, patch, mock_open
 from create_database import (
     check_winner,
     is_board_full,

@@ -11,4 +11,3 @@ class BaseAgent:
             tuple: (row, col) of the chosen move.
         """
         raise NotImplementedError
-

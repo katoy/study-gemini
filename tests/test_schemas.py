@@ -1,6 +1,5 @@
 import pytest
 from pydantic import ValidationError
-from typing import List, Optional, Tuple
 
 from server.schemas import StartGameRequest, BoardState, MoveRequest
 

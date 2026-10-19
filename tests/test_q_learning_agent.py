@@ -1,10 +1,7 @@
 import unittest
 import os
-import json
 from unittest.mock import patch
 from agents.q_learning_agent import QLearningAgent
-from game_logic import TicTacToe
-import numpy as np
 
 
 class TestQLearningAgent(unittest.TestCase):

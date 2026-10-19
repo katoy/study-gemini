@@ -118,8 +118,7 @@ impl Write for CountingErrorWriter {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.writes_count += 1;
         if self.writes_count > self.writes_before_error {
-            Err(io::Error::new(
-                io::ErrorKind::Other,
+            Err(io::Error::other(
                 "simulated write error",
             ))
         } else {

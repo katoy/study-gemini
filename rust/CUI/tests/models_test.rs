@@ -1,5 +1,4 @@
 use cui::models::{GameState, MoveRequest};
-use serde_json;
 
 #[test]
 fn test_game_state_deserialization() {
@@ -14,7 +13,7 @@ fn test_game_state_deserialization() {
     let game_state: GameState = serde_json::from_str(json_str).unwrap();
     assert_eq!(game_state.board[0][0], "X");
     assert_eq!(game_state.current_player, "X");
-    assert_eq!(game_state.game_over, false);
+    assert!(!game_state.game_over);
     assert!(game_state.winner.is_none());
 }
 

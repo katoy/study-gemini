@@ -1,5 +1,3 @@
-import pytest
-from unittest.mock import patch
 from CUI.cui_display import display_board
 
 

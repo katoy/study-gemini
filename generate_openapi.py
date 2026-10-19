@@ -3,9 +3,9 @@ import sys
 import os
 
 # プロジェクトのルートディレクトリをPythonの検索パスに追加
-sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath("."))
 
-from server.server import app # server.pyからFastAPIアプリをインポート
+from server.server import app  # server.pyからFastAPIアプリをインポート
 
 # OpenAPIスキーマを生成
 openapi_schema = app.openapi()

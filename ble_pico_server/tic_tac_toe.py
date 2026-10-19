@@ -83,7 +83,7 @@ class TicTacToe:
             str: "X" or "O" if a player wins, "draw" if board is full,
                 or None if the game continues.
         """
-        if self.winner: # Already decided
+        if self.winner:  # Already decided
             return self.winner
 
         winner, winner_line = self._check_winner_logic(self.board)
